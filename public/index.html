@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+    <meta charset="UTF-8">
+    <title> Mi app FUllstach</title>    
+    </head>
+    <body>
+        <h1>Conexion HTML -> Node -> MongoDB</h1>
+        <button id="btn">Saludar al backend</button>
+    <p id="respuesta"></p>
+
+    <script>
+        document.getElementById('btn').addEventListener('click', async() => {
+            const res = await fetch ('/api/saludo');
+            const data = await res.json();
+            document.getElementById('respuesta').innerText= data.mensaje;
+        
+        });
+        </script>
+    </body>
+    </html>
