@@ -59,6 +59,7 @@ const Event = mongoose.model('Event', eventSchema);
 // 4. RUTAS DE LA API
 // ==========================================
 
+// GET: Obtener todos los eventos
 app.get('/api/events', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
@@ -69,6 +70,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
+// POST: Crear un nuevo evento
 app.post('/api/events', async (req, res) => {
     try {
         const { title, date } = req.body;
@@ -89,6 +91,49 @@ app.post('/api/events', async (req, res) => {
         }
         
         res.status(500).json({ error: 'Hubo un problema interno al guardar el evento.' });
+    }
+});
+
+// PUT: Actualizar un evento existente por ID
+app.put('/api/events/:id', async (req, res) => {
+    try {
+        const { title, date } = req.body;
+        
+        if (!title || !date) {
+            return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
+        }
+
+        const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        
+        if (!updatedEvent) {
+            return res.status(404).json({ error: 'El evento no existe.' });
+        }
+        
+        res.status(200).json(updatedEvent);
+    } catch (error) {
+        console.error('Error en PUT /api/events/:id:', error);
+        
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({ error: error.message });
+        }
+        
+        res.status(500).json({ error: 'Hubo un problema interno al actualizar el evento.' });
+    }
+});
+
+// DELETE: Eliminar un evento por ID
+app.delete('/api/events/:id', async (req, res) => {
+    try {
+        const deletedEvent = await Event.findByIdAndDelete(req.params.id);
+        
+        if (!deletedEvent) {
+            return res.status(404).json({ error: 'El evento no existe.' });
+        }
+        
+        res.status(200).json({ message: 'Evento eliminado correctamente.' });
+    } catch (error) {
+        console.error('Error en DELETE /api/events/:id:', error);
+        res.status(500).json({ error: 'Hubo un problema interno al eliminar el evento.' });
     }
 });
 

@@ -78,7 +78,7 @@
             cursor: pointer;
         }
 
-        /* --- CARTELERA (CON ENFOQUE CENTRAL) --- */
+        /* --- CARTELERA --- */
         .main-container { 
             display: flex; 
             justify-content: center; 
@@ -95,7 +95,6 @@
             overflow: hidden; 
         }
         
-        /* Titulo de la cartelera arriba del recuadro de eventos de hoy */
         .cartelera-header {
             background: var(--azul);
             color: var(--blanco);
@@ -111,12 +110,11 @@
             text-transform: uppercase;
         }
 
-        /* Boton de agregar cuadrado dentro de la cartelera */
         .btn-agregar {
             background: var(--amarillo);
             color: var(--negro);
             border: 2px solid var(--negro);
-            border-radius: 0; /* Completamente cuadrado */
+            border-radius: 0; 
             padding: 10px 20px;
             font-size: 14px;
             font-weight: bold;
@@ -171,6 +169,42 @@
             margin: 0; 
             font-size: 14px; 
             color: #555; 
+        }
+
+        /* Botones de acciones dentro de la tarjeta */
+        .evento-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn-action-edit {
+            background: var(--azul);
+            color: var(--blanco);
+            border: 1px solid var(--negro);
+            border-radius: 0;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-action-edit:hover {
+            background: var(--amarillo);
+            color: var(--negro);
+        }
+        .btn-action-delete {
+            background: #cc0000;
+            color: var(--blanco);
+            border: 1px solid var(--negro);
+            border-radius: 0;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-action-delete:hover {
+            background: var(--negro);
         }
 
         /* --- VENTANA MODAL --- */
@@ -243,7 +277,6 @@
 </head>
 <body>
 
-    <!-- Menú Lateral -->
     <div id="miSidebar" class="sidebar">
         <button class="close-btn" onclick="cerrarMenu()">&times;</button>
         <a href="#">Inicio</a>
@@ -251,20 +284,17 @@
         <a href="#">Configuracion</a>
     </div>
 
-    <!-- Cabecera -->
     <header>
         <button class="menu-btn" onclick="abrirMenu()">&#9776;</button>
         <h1>Panel de Control</h1>
     </header>
 
-    <!-- Cartelera -->
     <div class="main-container">
         <div class="cartelera">
             
-            <!-- Titulo superior con boton integrado -->
             <div class="cartelera-header">
                 <h2>Cartelera</h2>
-                <button class="btn-agregar" onclick="abrirModal()">Agregar evento</button>
+                <button class="btn-agregar" onclick="abrirModalAgregar()">Agregar evento</button>
             </div>
 
             <div class="seccion-hoy">
@@ -279,11 +309,10 @@
         </div>
     </div>
 
-    <!-- Modal Formulario -->
     <div id="modalEvento" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal()">&times;</span>
-            <h2 style="margin-top: 0; color: var(--azul);">Agregar Evento</h2>
+            <h2 id="modalTitle" style="margin-top: 0; color: var(--azul);">Agregar Evento</h2>
             <form id="formEvento">
                 <div class="form-group">
                     <label>Nombre del Evento</label>
@@ -301,12 +330,16 @@
                     <label>Duracion</label>
                     <input type="text" id="duracion" placeholder="Ej. 2 horas, 45 min">
                 </div>
-                <button type="submit" class="btn-submit">Guardar en Calendario</button>
+                <button type="submit" id="btnSubmit" class="btn-submit">Guardar en Calendario</button>
             </form>
         </div>
     </div>
 
     <script>
+        // --- CONTROL VARIABLES GLOBALES ---
+        let editEventId = null;
+        window.currentEvents = [];
+
         // --- CONTROL DEL MENÚ Y MODAL ---
         function abrirMenu() { document.getElementById("miSidebar").style.width = "250px"; }
         function cerrarMenu() { document.getElementById("miSidebar").style.width = "0"; }
@@ -322,12 +355,42 @@
             document.getElementById('duracionGroup').style.display = isTodoElDia ? 'none' : 'block';
         }
 
+        function abrirModalAgregar() {
+            editEventId = null;
+            document.getElementById('modalTitle').innerText = 'Agregar Evento';
+            document.getElementById('btnSubmit').innerText = 'Guardar en Calendario';
+            document.getElementById('formEvento').reset();
+            toggleDuracion();
+            abrirModal();
+        }
+
+        function prepararEdicion(id) {
+            const ev = window.currentEvents.find(e => e._id === id);
+            if (!ev) return;
+            
+            editEventId = id;
+            document.getElementById('modalTitle').innerText = 'Editar Evento';
+            document.getElementById('btnSubmit').innerText = 'Actualizar Evento';
+            
+            document.getElementById('nombre').value = ev.title;
+            
+            const d = new Date(ev.date);
+            const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            document.getElementById('fecha').value = localISO;
+            
+            document.getElementById('todoElDia').checked = ev.allDay;
+            document.getElementById('duracion').value = ev.duration || '';
+            
+            toggleDuracion();
+            abrirModal();
+        }
+
         // --- CONEXIÓN CON EL BACKEND ---
         
         document.getElementById('formEvento').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const nuevoEvento = {
+            const eventoData = {
                 title: document.getElementById('nombre').value,
                 date: document.getElementById('fecha').value,
                 allDay: document.getElementById('todoElDia').checked,
@@ -335,10 +398,18 @@
             };
 
             try {
-                const res = await fetch('/api/events', {
-                    method: 'POST',
+                let url = '/api/events';
+                let method = 'POST';
+                
+                if (editEventId) {
+                    url = `/api/events/${editEventId}`;
+                    method = 'PUT';
+                }
+
+                const res = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(nuevoEvento)
+                    body: JSON.stringify(eventoData)
                 });
                 
                 if (res.ok) {
@@ -348,15 +419,38 @@
                     cargarEventos(); 
                 }
             } catch (error) {
-                console.error("Error al guardar evento:", error);
-                alert("Hubo un error al guardar el evento.");
+                console.error("Error al procesar el evento:", error);
+                alert("Hubo un error al procesar el evento.");
             }
         });
+
+        async function eliminarEvento(id) {
+            if (!confirm("¿Esta seguro de que desea eliminar este evento?")) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/api/events/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (res.ok) {
+                    cargarEventos();
+                } else {
+                    alert("No se pudo eliminar el evento.");
+                }
+            } catch (error) {
+                console.error("Error al eliminar el evento:", error);
+                alert("Hubo un error de conexion.");
+            }
+        }
 
         async function cargarEventos() {
             try {
                 const res = await fetch('/api/events');
                 const eventos = await res.json();
+                
+                window.currentEvents = eventos;
                 
                 const contenedorHoy = document.getElementById('lista-hoy');
                 const contenedorFuturo = document.getElementById('lista-futuros');
@@ -378,13 +472,20 @@
                     const div = document.createElement('div');
                     div.className = 'evento-card';
 
+                    const actionsHtml = `
+                        <div class="evento-actions">
+                            <button class="btn-action-edit" onclick="prepararEdicion('${ev._id}')">Editar</button>
+                            <button class="btn-action-delete" onclick="eliminarEvento('${ev._id}')">Eliminar</button>
+                        </div>
+                    `;
+
                     if (eventoSinHora.getTime() === fechaActual.getTime()) {
-                        div.innerHTML = `<h5>${ev.title}</h5><p>Inicio: ${horaFormato}${duracionStr}</p>`;
+                        div.innerHTML = `<h5>${ev.title}</h5><p>Inicio: ${horaFormato}${duracionStr}</p>` + actionsHtml;
                         contenedorHoy.appendChild(div);
                     } 
                     else if (eventoSinHora.getTime() > fechaActual.getTime()) {
                         const fechaFormato = fechaEvento.toLocaleDateString();
-                        div.innerHTML = `<h5>${ev.title}</h5><p>Fecha: ${fechaFormato} | Inicio: ${horaFormato}</p>`;
+                        div.innerHTML = `<h5>${ev.title}</h5><p>Fecha: ${fechaFormato} | Inicio: ${horaFormato}${duracionStr}</p>` + actionsHtml;
                         contenedorFuturo.appendChild(div);
                     }
                 });
