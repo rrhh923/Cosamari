@@ -1,21 +1,209 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
+<head>
     <meta charset="UTF-8">
-    <title> Mi app FUllstach</title>    
-    </head>
-    <body>
-        <h1>Conexion HTML -> Node -> MongoDB</h1>
-        <button id="btn">Saludar al backend</button>
-    <p id="respuesta"></p>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi app Fullstack - Cartelera</title>
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #eef2f5; }
+        
+        /* --- CABECERA Y MENÚ --- */
+        header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+        .menu-btn { font-size: 28px; cursor: pointer; background: none; border: none; color: white; margin-right: 20px; }
+        
+        .sidebar { height: 100%; width: 0; position: fixed; z-index: 10; top: 0; left: 0; background-color: #1a252f; overflow-x: hidden; transition: 0.3s; padding-top: 60px; box-shadow: 2px 0 5px rgba(0,0,0,0.5);}
+        .sidebar a { padding: 15px 25px; text-decoration: none; font-size: 18px; color: #bdc3c7; display: block; transition: 0.3s; border-bottom: 1px solid #2c3e50;}
+        .sidebar a:hover { color: white; background-color: #34495e; }
+        .sidebar .close-btn { position: absolute; top: 10px; right: 20px; font-size: 36px; border: none; }
+
+        /* --- CARTELERA (MAIN CONTENT) --- */
+        .main-container { display: flex; justify-content: center; padding: 20px; height: calc(100vh - 120px); }
+        .cartelera { background: white; width: 100%; max-width: 900px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+        
+        .seccion-hoy { flex: 2; padding: 20px; overflow-y: auto; background-color: #ffffff; }
+        .seccion-futuro { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f9fa; border-top: 3px solid #e9ecef; }
+        
+        h3, h4 { margin-top: 0; color: #2c3e50; }
+        .evento-card { background: #fdfdfd; border-left: 5px solid #3498db; padding: 12px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .evento-card h5 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
+        .evento-card p { margin: 0; font-size: 14px; color: #666; }
+
+        /* --- BOTÓN FLOTANTE --- */
+        .fab-btn { position: fixed; bottom: 30px; right: 30px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 35px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.2s;}
+        .fab-btn:hover { background: #c0392b; transform: scale(1.05); }
+
+        /* --- VENTANA MODAL --- */
+        .modal { display: none; position: fixed; z-index: 20; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: white; margin: 8% auto; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: #aaa; cursor: pointer; }
+        .close-modal:hover { color: black; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"], .form-group input[type="datetime-local"] { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-submit { width: 100%; padding: 12px; background: #2ecc71; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-submit:hover { background: #27ae60; }
+    </style>
+</head>
+<body>
+
+    <div id="miSidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="cerrarMenu()">&times;</a>
+        <a href="#">🏠 Inicio</a>
+        <a href="#">👥 Miembros (Próximamente)</a>
+        <a href="#">⚙️ Configuración (Próximamente)</a>
+    </div>
+
+    <header>
+        <button class="menu-btn" onclick="abrirMenu()">&#9776;</button>
+        <h2>Cartelera Principal</h2>
+    </header>
+
+    <div class="main-container">
+        <div class="cartelera">
+            <div class="seccion-hoy">
+                <h3>📅 Eventos de Hoy</h3>
+                <div id="lista-hoy">Cargando eventos...</div>
+            </div>
+            <div class="seccion-futuro">
+                <h4>🔜 Próximos Eventos</h4>
+                <div id="lista-futuros">Cargando eventos...</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="fab-btn" onclick="abrirModal()">+</button>
+
+    <div id="modalEvento" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            <h2 style="margin-top: 0;">Agregar Evento</h2>
+            <form id="formEvento">
+                <div class="form-group">
+                    <label>Nombre del Evento</label>
+                    <input type="text" id="nombre" placeholder="Ej. Reunión de equipo" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha y Hora de Inicio</label>
+                    <input type="datetime-local" id="fecha" required>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="todoElDia" onchange="toggleDuracion()">
+                    <label style="margin: 0; font-weight: normal;">¿Es todo el día?</label>
+                </div>
+                <div class="form-group" id="duracionGroup">
+                    <label>Duración</label>
+                    <input type="text" id="duracion" placeholder="Ej. 2 horas, 45 min">
+                </div>
+                <button type="submit" class="btn-submit">Guardar en Calendario</button>
+            </form>
+        </div>
+    </div>
 
     <script>
-        document.getElementById('btn').addEventListener('click', async() => {
-            const res = await fetch ('/api/saludo');
-            const data = await res.json();
-            document.getElementById('respuesta').innerText= data.mensaje;
+        // --- CONTROL DEL MENÚ Y MODAL ---
+        function abrirMenu() { document.getElementById("miSidebar").style.width = "250px"; }
+        function cerrarMenu() { document.getElementById("miSidebar").style.width = "0"; }
+
+        const modal = document.getElementById("modalEvento");
+        function abrirModal() { modal.style.display = "block"; }
+        function cerrarModal() { modal.style.display = "none"; }
         
+        // Cerrar modal si el usuario hace clic afuera de la caja
+        window.onclick = function(event) { if (event.target === modal) cerrarModal(); }
+
+        // Ocultar campo de duración si es todo el día
+        function toggleDuracion() {
+            const isTodoElDia = document.getElementById('todoElDia').checked;
+            document.getElementById('duracionGroup').style.display = isTodoElDia ? 'none' : 'block';
+        }
+
+        // --- CONEXIÓN CON EL BACKEND ---
+        
+        // 1. Guardar un evento nuevo
+        document.getElementById('formEvento').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nuevoEvento = {
+                title: document.getElementById('nombre').value,
+                date: document.getElementById('fecha').value,
+                allDay: document.getElementById('todoElDia').checked,
+                duration: document.getElementById('duracion').value
+            };
+
+            try {
+                const res = await fetch('/api/events', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nuevoEvento)
+                });
+                
+                if (res.ok) {
+                    cerrarModal();
+                    document.getElementById('formEvento').reset(); // Limpiar formulario
+                    toggleDuracion(); // Resetear vista de duración
+                    cargarEventos(); // Refrescar cartelera
+                }
+            } catch (error) {
+                console.error("Error al guardar evento:", error);
+                alert("Hubo un error al guardar el evento.");
+            }
         });
-        </script>
-    </body>
-    </html>
+
+        // 2. Cargar y separar eventos (Hoy vs Futuro)
+        async function cargarEventos() {
+            try {
+                const res = await fetch('/api/events');
+                const eventos = await res.json();
+                
+                const contenedorHoy = document.getElementById('lista-hoy');
+                const contenedorFuturo = document.getElementById('lista-futuros');
+                
+                contenedorHoy.innerHTML = '';
+                contenedorFuturo.innerHTML = '';
+
+                // Obtenemos el inicio del día de hoy para comparar de forma precisa
+                const fechaActual = new Date();
+                fechaActual.setHours(0, 0, 0, 0);
+
+                eventos.forEach(ev => {
+                    const fechaEvento = new Date(ev.date);
+                    const eventoSinHora = new Date(ev.date);
+                    eventoSinHora.setHours(0, 0, 0, 0);
+
+                    // Formatear visualización
+                    const horaFormato = ev.allDay ? 'Todo el día' : fechaEvento.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const duracionStr = (ev.duration && !ev.allDay) ? ` - ⏳ ${ev.duration}` : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'evento-card';
+
+                    // Si el evento es de hoy
+                    if (eventoSinHora.getTime() === fechaActual.getTime()) {
+                        div.innerHTML = `<h5>${ev.title}</h5><p>🕒 ${horaFormato}${duracionStr}</p>`;
+                        contenedorHoy.appendChild(div);
+                    } 
+                    // Si el evento es en el futuro
+                    else if (eventoSinHora.getTime() > fechaActual.getTime()) {
+                        const fechaFormato = fechaEvento.toLocaleDateString();
+                        div.innerHTML = `<h5>${ev.title}</h5><p>📅 ${fechaFormato} | 🕒 ${horaFormato}</p>`;
+                        contenedorFuturo.appendChild(div);
+                    }
+                });
+
+                if(contenedorHoy.innerHTML === '') contenedorHoy.innerHTML = '<p style="color:#7f8c8d;">No hay eventos pautados para hoy.</p>';
+                if(contenedorFuturo.innerHTML === '') contenedorFuturo.innerHTML = '<p style="color:#7f8c8d;">No hay eventos futuros.</p>';
+
+            } catch (error) {
+                console.error("Error al cargar la cartelera:", error);
+                document.getElementById('lista-hoy').innerHTML = '<p>Error de conexión.</p>';
+                document.getElementById('lista-futuros').innerHTML = '<p>Error de conexión.</p>';
+            }
+        }
+
+        // Ejecutar al cargar la página
+        cargarEventos();
+    </script>
+</body>
+</html>
