@@ -8,35 +8,35 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==========================================
-// 1. MIDDLEWARES (Configuraciones base)
+// 1. MIDDLEWARES
 // ==========================================
-app.use(cors()); // Evita bloqueos de origen cruzado (Cross-Origin Resource Sharing)
-app.use(express.json()); // Permite al servidor leer JSON en los requests
-app.use(express.static(path.join(__dirname, 'public'))); // Sirve los archivos de la carpeta 'public'
+app.use(cors()); 
+app.use(express.json()); 
+app.use(express.static(path.join(__dirname, 'public'))); 
 
 // ==========================================
-// 2. CONEXIÓN A LA BASE DE DATOS
+// 2. CONEXION A LA BASE DE DATOS
 // ==========================================
 if (!process.env.MONGO_URI) {
-    console.error('❌ ERROR FATAL: La variable de entorno MONGO_URI no está configurada.');
-    process.exit(1); // Detiene el servidor porque sin base de datos no puede funcionar
+    console.error('ERROR FATAL: La variable de entorno MONGO_URI no esta configurada.');
+    process.exit(1); 
 }
 
-mongoose.set('strictQuery', false); // Evita advertencias en consolas modernas de Mongoose
+mongoose.set('strictQuery', false); 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Conectado exitosamente a MongoDB'))
+    .then(() => console.log('Conectado exitosamente a MongoDB'))
     .catch(err => {
-        console.error('❌ Error crítico de conexión a MongoDB:', err);
-        process.exit(1); // Detiene el servidor si falla la conexión
+        console.error('Error critico de conexion a MongoDB:', err);
+        process.exit(1); 
     });
 
 // ==========================================
-// 3. MODELO DE DATOS (Esquema)
+// 3. MODELO DE DATOS
 // ==========================================
 const eventSchema = new mongoose.Schema({
     title: { 
         type: String, 
-        required: [true, 'El título del evento es obligatorio'],
+        required: [true, 'El titulo del evento es obligatorio'],
         trim: true 
     },
     date: { 
@@ -51,15 +51,14 @@ const eventSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     }
-}, { timestamps: true }); // timestamps crea automáticamente las fechas de 'createdAt' y 'updatedAt'
+}, { timestamps: true }); 
 
 const Event = mongoose.model('Event', eventSchema);
 
 // ==========================================
-// 4. RUTAS DE LA API (Endpoints)
+// 4. RUTAS DE LA API
 // ==========================================
 
-// GET: Obtener todos los eventos ordenados por fecha
 app.get('/api/events', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
@@ -70,24 +69,21 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-// POST: Crear un nuevo evento con validaciones
 app.post('/api/events', async (req, res) => {
     try {
         const { title, date } = req.body;
         
-        // Validación extra de seguridad desde el backend
         if (!title || !date) {
-            return res.status(400).json({ error: 'El título y la fecha son campos obligatorios.' });
+            return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
         }
 
         const newEvent = new Event(req.body);
         const savedEvent = await newEvent.save();
         
-        res.status(201).json(savedEvent); // 201 significa "Creado exitosamente"
+        res.status(201).json(savedEvent); 
     } catch (error) {
         console.error('Error en POST /api/events:', error);
         
-        // Si el error es de validación de Mongoose, mandar un 400 (Bad Request)
         if (error.name === 'ValidationError') {
             return res.status(400).json({ error: error.message });
         }
@@ -96,12 +92,10 @@ app.post('/api/events', async (req, res) => {
     }
 });
 
-// Ruta 404 para cualquier otra petición a /api/ que no exista
 app.use('/api/*', (req, res) => {
     res.status(404).json({ error: 'El endpoint (ruta) de la API que buscas no existe.' });
 });
 
-// Fallback: Si alguien recarga una página que no es /api, enviar siempre el index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -110,5 +104,5 @@ app.get('*', (req, res) => {
 // 5. INICIAR SERVIDOR
 // ==========================================
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor ejecutándose correctamente en el puerto ${PORT}`);
+    console.log(`Servidor ejecutandose correctamente en el puerto ${PORT}`);
 });
