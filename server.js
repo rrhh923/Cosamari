@@ -31,114 +31,99 @@ mongoose.connect(process.env.MONGO_URI)
     });
 
 // ==========================================
-// 3. MODELO DE DATOS
+// 3. MODELOS DE DATOS
 // ==========================================
+
+// Modelo de Eventos
 const eventSchema = new mongoose.Schema({
-    title: { 
-        type: String, 
-        required: [true, 'El titulo del evento es obligatorio'],
-        trim: true 
-    },
-    date: { 
-        type: Date, 
-        required: [true, 'La fecha de inicio es obligatoria'] 
-    },
-    duration: { 
-        type: String, 
-        default: '' 
-    },
-    allDay: { 
-        type: Boolean, 
-        default: false 
-    }
+    title: { type: String, required: [true, 'El titulo del evento es obligatorio'], trim: true },
+    date: { type: Date, required: [true, 'La fecha de inicio es obligatoria'] },
+    duration: { type: String, default: '' },
+    allDay: { type: Boolean, default: false }
 }, { timestamps: true }); 
 
 const Event = mongoose.model('Event', eventSchema);
+
+// Modelo de Empleados
+const employeeSchema = new mongoose.Schema({
+    nombre: { type: String, required: [true, 'El nombre del empleado es obligatorio'], trim: true }
+}, { timestamps: true }); // timestamps guarda automaticamente la fecha de creacion
+
+const Employee = mongoose.model('Employee', employeeSchema);
 
 // ==========================================
 // 4. RUTAS DE LA API
 // ==========================================
 
-// GET: Obtener todos los eventos
+// --- RUTAS DE EVENTOS ---
 app.get('/api/events', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
         res.status(200).json(events);
     } catch (error) {
-        console.error('Error en GET /api/events:', error);
         res.status(500).json({ error: 'Hubo un problema interno al obtener los eventos.' });
     }
 });
 
-// POST: Crear un nuevo evento
 app.post('/api/events', async (req, res) => {
     try {
         const { title, date } = req.body;
+        if (!title || !date) return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
         
-        if (!title || !date) {
-            return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
-        }
-
         const newEvent = new Event(req.body);
         const savedEvent = await newEvent.save();
-        
         res.status(201).json(savedEvent); 
     } catch (error) {
-        console.error('Error en POST /api/events:', error);
-        
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ error: error.message });
-        }
-        
         res.status(500).json({ error: 'Hubo un problema interno al guardar el evento.' });
     }
 });
 
-// PUT: Actualizar un evento existente por ID
 app.put('/api/events/:id', async (req, res) => {
     try {
-        const { title, date } = req.body;
-        
-        if (!title || !date) {
-            return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
-        }
-
-        const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        
-        if (!updatedEvent) {
-            return res.status(404).json({ error: 'El evento no existe.' });
-        }
-        
+        const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updatedEvent) return res.status(404).json({ error: 'El evento no existe.' });
         res.status(200).json(updatedEvent);
     } catch (error) {
-        console.error('Error en PUT /api/events/:id:', error);
-        
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({ error: error.message });
-        }
-        
-        res.status(500).json({ error: 'Hubo un problema interno al actualizar el evento.' });
+        res.status(500).json({ error: 'Hubo un problema al actualizar el evento.' });
     }
 });
 
-// DELETE: Eliminar un evento por ID
 app.delete('/api/events/:id', async (req, res) => {
     try {
         const deletedEvent = await Event.findByIdAndDelete(req.params.id);
-        
-        if (!deletedEvent) {
-            return res.status(404).json({ error: 'El evento no existe.' });
-        }
-        
-        res.status(200).json({ message: 'Evento eliminado correctamente.' });
+        if (!deletedEvent) return res.status(404).json({ error: 'El evento no existe.' });
+        res.status(200).json({ message: 'Evento eliminado.' });
     } catch (error) {
-        console.error('Error en DELETE /api/events/:id:', error);
-        res.status(500).json({ error: 'Hubo un problema interno al eliminar el evento.' });
+        res.status(500).json({ error: 'Hubo un problema al eliminar el evento.' });
     }
 });
 
+// --- RUTAS DE EMPLEADOS ---
+app.get('/api/employees', async (req, res) => {
+    try {
+        const employees = await Employee.find().sort({ createdAt: -1 }); // Los mas nuevos primero
+        res.status(200).json(employees);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener los empleados.' });
+    }
+});
+
+app.post('/api/employees', async (req, res) => {
+    try {
+        const { nombre } = req.body;
+        if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+
+        const newEmployee = new Employee({ nombre });
+        const savedEmployee = await newEmployee.save();
+        res.status(201).json(savedEmployee);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al guardar el empleado.' });
+    }
+});
+
+
 app.use('/api/*', (req, res) => {
-    res.status(404).json({ error: 'El endpoint (ruta) de la API que buscas no existe.' });
+    res.status(404).json({ error: 'El endpoint de la API no existe.' });
 });
 
 app.get('*', (req, res) => {
