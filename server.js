@@ -96,6 +96,38 @@ const vehiculoRegistroSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const VehiculoRegistro = mongoose.model('VehiculoRegistro', vehiculoRegistroSchema);
+
+// Modelo de Notas del Diario (una por dia)
+const diarioNotaSchema = new mongoose.Schema({
+    fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
+    texto: { type: String, default: '' }
+}, { timestamps: true });
+
+const DiarioNota = mongoose.model('DiarioNota', diarioNotaSchema);
+
+// Modelo de la Nota General del Diario (documento unico)
+const diarioGeneralSchema = new mongoose.Schema({
+    texto: { type: String, default: '' }
+}, { timestamps: true });
+
+const DiarioGeneral = mongoose.model('DiarioGeneral', diarioGeneralSchema);
+
+// Modelo de Grupos de Asistencia (listas reutilizables de personas)
+const asistenciaGrupoSchema = new mongoose.Schema({
+    nombre: { type: String, required: [true, 'El nombre del grupo es obligatorio'], trim: true },
+    personas: { type: [String], default: [] }
+}, { timestamps: true });
+
+const AsistenciaGrupo = mongoose.model('AsistenciaGrupo', asistenciaGrupoSchema);
+
+// Modelo de Registros de Asistencia (una persona, un dia, un estado)
+const asistenciaRegistroSchema = new mongoose.Schema({
+    fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
+    persona: { type: String, required: [true, 'La persona es obligatoria'], trim: true },
+    estado: { type: String, enum: ['presente', 'ausente', 'tarde'], default: 'presente' }
+}, { timestamps: true });
+
+const AsistenciaRegistro = mongoose.model('AsistenciaRegistro', asistenciaRegistroSchema);
 // 4. RUTAS DE LA API
 // --- RUTAS DE EVENTOS ---
 app.get('/api/events', async (req, res) => {
@@ -321,6 +353,200 @@ app.delete('/api/vehiculo-registros/:id', requireAuth, async (req, res) => {
         res.status(200).json({ message: 'Registro eliminado.' });
     } catch (error) {
         res.status(500).json({ error: 'Hubo un problema al eliminar el registro.' });
+    }
+});
+
+// --- RUTAS DE DIARIO ---
+// Notas por dia, para el calendario. Soporta ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
+app.get('/api/diario-notas', requireAuth, async (req, res) => {
+    try {
+        const filtro = {};
+        if (req.query.desde || req.query.hasta) {
+            filtro.fecha = {};
+            if (req.query.desde) filtro.fecha.$gte = new Date(req.query.desde);
+            if (req.query.hasta) filtro.fecha.$lte = new Date(req.query.hasta);
+        }
+        const notas = await DiarioNota.find(filtro).sort({ fecha: 1 });
+        res.status(200).json(notas);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener las notas.' });
+    }
+});
+
+// Crea o actualiza (upsert) la nota de un dia especifico
+app.put('/api/diario-notas', requireAuth, async (req, res) => {
+    try {
+        const { fecha, texto } = req.body;
+        if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria.' });
+        const nota = await DiarioNota.findOneAndUpdate(
+            { fecha: new Date(fecha) },
+            { texto: texto || '' },
+            { new: true, upsert: true }
+        );
+        res.status(200).json(nota);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al guardar la nota.' });
+    }
+});
+
+// Nota general (un unico documento para todo el panel)
+app.get('/api/diario-general', requireAuth, async (req, res) => {
+    try {
+        const general = await DiarioGeneral.findOne();
+        res.status(200).json(general || { texto: '' });
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener la nota general.' });
+    }
+});
+
+app.put('/api/diario-general', requireAuth, async (req, res) => {
+    try {
+        const { texto } = req.body;
+        const general = await DiarioGeneral.findOneAndUpdate({}, { texto: texto || '' }, { new: true, upsert: true });
+        res.status(200).json(general);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al guardar la nota general.' });
+    }
+});
+
+// --- RUTAS DE GRUPOS DE ASISTENCIA ---
+app.get('/api/asistencia-grupos', requireAuth, async (req, res) => {
+    try {
+        const grupos = await AsistenciaGrupo.find().sort({ nombre: 1 });
+        res.status(200).json(grupos);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener los grupos.' });
+    }
+});
+
+app.post('/api/asistencia-grupos', requireAuth, async (req, res) => {
+    try {
+        const { nombre } = req.body;
+        if (!nombre) return res.status(400).json({ error: 'El nombre del grupo es obligatorio.' });
+        const nuevo = new AsistenciaGrupo(req.body);
+        const guardado = await nuevo.save();
+        res.status(201).json(guardado);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al guardar el grupo.' });
+    }
+});
+
+app.put('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
+    try {
+        const actualizado = await AsistenciaGrupo.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!actualizado) return res.status(404).json({ error: 'El grupo no existe.' });
+        res.status(200).json(actualizado);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al actualizar el grupo.' });
+    }
+});
+
+app.delete('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
+    try {
+        const eliminado = await AsistenciaGrupo.findByIdAndDelete(req.params.id);
+        if (!eliminado) return res.status(404).json({ error: 'El grupo no existe.' });
+        res.status(200).json({ message: 'Grupo eliminado.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al eliminar el grupo.' });
+    }
+});
+
+// --- RUTAS DE REGISTROS DE ASISTENCIA ---
+// Soporta: ?fecha=YYYY-MM-DD (un solo dia)  o  ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD (rango, para el calendario)
+app.get('/api/asistencias', requireAuth, async (req, res) => {
+    try {
+        const filtro = {};
+        if (req.query.fecha) {
+            const d = new Date(req.query.fecha);
+            const inicio = new Date(d); inicio.setUTCHours(0, 0, 0, 0);
+            const fin = new Date(d); fin.setUTCHours(23, 59, 59, 999);
+            filtro.fecha = { $gte: inicio, $lte: fin };
+        } else if (req.query.desde || req.query.hasta) {
+            filtro.fecha = {};
+            if (req.query.desde) filtro.fecha.$gte = new Date(req.query.desde);
+            if (req.query.hasta) filtro.fecha.$lte = new Date(req.query.hasta);
+        }
+        const registros = await AsistenciaRegistro.find(filtro).sort({ fecha: 1, persona: 1 });
+        res.status(200).json(registros);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener las asistencias.' });
+    }
+});
+
+// Agrega (o actualiza el estado de) una persona en un dia
+app.post('/api/asistencias', requireAuth, async (req, res) => {
+    try {
+        const { fecha, persona, estado } = req.body;
+        if (!fecha || !persona) return res.status(400).json({ error: 'La fecha y la persona son obligatorias.' });
+        const registro = await AsistenciaRegistro.findOneAndUpdate(
+            { fecha: new Date(fecha), persona },
+            { estado: estado || 'presente' },
+            { new: true, upsert: true }
+        );
+        res.status(201).json(registro);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al guardar la asistencia.' });
+    }
+});
+
+app.put('/api/asistencias/:id', requireAuth, async (req, res) => {
+    try {
+        const actualizado = await AsistenciaRegistro.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!actualizado) return res.status(404).json({ error: 'El registro no existe.' });
+        res.status(200).json(actualizado);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al actualizar la asistencia.' });
+    }
+});
+
+app.delete('/api/asistencias/:id', requireAuth, async (req, res) => {
+    try {
+        const eliminado = await AsistenciaRegistro.findByIdAndDelete(req.params.id);
+        if (!eliminado) return res.status(404).json({ error: 'El registro no existe.' });
+        res.status(200).json({ message: 'Registro eliminado.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al eliminar el registro.' });
+    }
+});
+
+// Agrega un grupo completo a un dia: crea un registro individual por cada persona del grupo
+// (si esa persona ya tenia un registro ese dia, no lo pisa)
+app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
+    try {
+        const { fecha, grupoId } = req.body;
+        if (!fecha || !grupoId) return res.status(400).json({ error: 'La fecha y el grupo son obligatorios.' });
+
+        const grupo = await AsistenciaGrupo.findById(grupoId);
+        if (!grupo) return res.status(404).json({ error: 'El grupo no existe.' });
+
+        const fechaDate = new Date(fecha);
+        const operaciones = grupo.personas.map(persona => ({
+            updateOne: {
+                filter: { fecha: fechaDate, persona },
+                update: { $setOnInsert: { fecha: fechaDate, persona, estado: 'presente' } },
+                upsert: true
+            }
+        }));
+        if (operaciones.length > 0) await AsistenciaRegistro.bulkWrite(operaciones);
+
+        const registrosDelDia = await AsistenciaRegistro.find({ fecha: fechaDate }).sort({ persona: 1 });
+        res.status(200).json(registrosDelDia);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al agregar el grupo.' });
+    }
+});
+
+// "Tick general": marca a todos los registrados de un dia con el mismo estado (por defecto, presente)
+app.post('/api/asistencias/marcar-todos', requireAuth, async (req, res) => {
+    try {
+        const { fecha, estado } = req.body;
+        if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria.' });
+        const fechaDate = new Date(fecha);
+        await AsistenciaRegistro.updateMany({ fecha: fechaDate }, { estado: estado || 'presente' });
+        const registrosDelDia = await AsistenciaRegistro.find({ fecha: fechaDate }).sort({ persona: 1 });
+        res.status(200).json(registrosDelDia);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al marcar la asistencia.' });
     }
 });
 

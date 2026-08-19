@@ -185,42 +185,46 @@
         .evento-card p { margin: 0; font-size: 14px; color: #555; }
         .evento-actions { display: flex; gap: 10px; margin-top: 10px; }
         
-        /* --- TARJETAS DE LEGAJOS (colapsable) --- */
+        /* --- TARJETAS DE LEGAJOS (colapsable, compacto) --- */
         .legajo-card {
             background: var(--blanco);
             border: 1px solid #ddd;
-            border-left: 5px solid var(--azul);
-            margin-bottom: 12px;
+            border-left: 4px solid var(--azul);
+            margin-bottom: 3px;
         }
         .legajo-header {
-            padding: 12px 15px;
+            padding: 6px 10px;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
+            gap: 12px;
             cursor: pointer;
         }
         .legajo-header:hover { background-color: var(--gris-claro); }
         .legajo-header h5 {
             margin: 0;
-            font-size: 18px;
+            font-size: 14px;
             color: var(--negro);
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .legajo-header h5::before {
             content: '\25B6';
             display: inline-block;
-            font-size: 12px;
+            font-size: 10px;
             color: var(--azul);
-            margin-right: 10px;
+            margin-right: 8px;
             transition: transform 0.2s;
         }
         .legajo-card.abierto .legajo-header h5::before { transform: rotate(90deg); }
+        .legajo-header .evento-actions { gap: 6px; }
+        .legajo-header .btn-action-edit, .legajo-header .btn-action-delete { padding: 3px 9px; font-size: 11px; }
         .legajo-detalle {
             display: none;
-            padding: 0 15px 15px 15px;
+            padding: 0 12px 10px 12px;
             border-top: 1px solid #eee;
         }
-        .legajo-card.abierto .legajo-detalle { display: block; padding-top: 12px; }
+        .legajo-card.abierto .legajo-detalle { display: block; padding-top: 10px; }
         .legajo-datos {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -357,6 +361,97 @@
         .registro-tag.uso { background: var(--azul); }
         .registro-tag.mantenimiento { background: #cc7a00; }
 
+        /* --- DIARIO: CALENDARIO + NOTA GENERAL --- */
+        .diario-layout {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .diario-general-panel {
+            flex: 1;
+            min-width: 260px;
+            border-left: 2px solid var(--azul);
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .textarea-grande {
+            flex: 1;
+            min-height: 260px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            border: 1px solid var(--negro);
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        /* --- ASISTENCIAS: CALENDARIO + GRUPOS --- */
+        .asistencias-layout {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .grupos-panel {
+            flex: 1;
+            min-width: 240px;
+            border-left: 2px solid var(--azul);
+            padding-left: 20px;
+        }
+        .badge-presente, .badge-ausente, .badge-tarde {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 1px 4px;
+            margin: 2px 2px 0 0;
+            color: var(--blanco);
+            display: inline-block;
+        }
+        .badge-presente { background: #2e8b2e; }
+        .badge-ausente { background: #cc0000; }
+        .badge-tarde { background: var(--amarillo); color: var(--negro); }
+
+        .asistencia-persona-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            gap: 10px;
+        }
+        .asistencia-persona-row:last-child { border-bottom: none; }
+        .asistencia-persona-nombre { flex: 1; font-size: 14px; font-weight: bold; }
+        .asistencia-estados { display: flex; gap: 5px; align-items: center; }
+        .btn-estado {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            background: var(--blanco);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .btn-estado.presente.activo { background: #2e8b2e; color: var(--blanco); border-color: #2e8b2e; }
+        .btn-estado.ausente.activo { background: #cc0000; color: var(--blanco); border-color: #cc0000; }
+        .btn-estado.tarde.activo { background: var(--amarillo); color: var(--negro); border-color: var(--amarillo); }
+        .btn-quitar {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 11px;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-left: 4px;
+        }
+        .btn-quitar:hover { color: #cc0000; }
+
         /* Botones de acción genéricos */
         .btn-action-edit { background: var(--azul); color: var(--blanco); border: 1px solid var(--negro); padding: 5px 12px; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-action-edit:hover { background: var(--amarillo); color: var(--negro); }
@@ -426,7 +521,21 @@
 
         <div id="vista-diario" class="panel-box" style="display: none;">
             <div class="panel-header"><h2>Diario</h2></div>
-            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+            <div class="diario-layout">
+                <div class="calendario-panel">
+                    <div class="calendario-nav">
+                        <button onclick="cambiarMesDiario(-1)">&laquo;</button>
+                        <h3 id="calendarioTituloDiario"></h3>
+                        <button onclick="cambiarMesDiario(1)">&raquo;</button>
+                    </div>
+                    <div class="calendario-grid" id="calendarioGridDiario"></div>
+                </div>
+                <div class="diario-general-panel">
+                    <h4>Notas Generales</h4>
+                    <textarea id="textoDiarioGeneral" class="textarea-grande" placeholder="Escribe aquí notas generales..."></textarea>
+                    <button class="btn-submit" onclick="guardarDiarioGeneral()">Guardar</button>
+                </div>
+            </div>
         </div>
 
         <div id="vista-evaluacion" class="panel-box" style="display: none;">
@@ -436,7 +545,21 @@
 
         <div id="vista-asistencias" class="panel-box" style="display: none;">
             <div class="panel-header"><h2>Asistencias</h2></div>
-            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+            <div class="asistencias-layout">
+                <div class="calendario-panel">
+                    <div class="calendario-nav">
+                        <button onclick="cambiarMesAsistencias(-1)">&laquo;</button>
+                        <h3 id="calendarioTituloAsistencias"></h3>
+                        <button onclick="cambiarMesAsistencias(1)">&raquo;</button>
+                    </div>
+                    <div class="calendario-grid" id="calendarioGridAsistencias"></div>
+                </div>
+                <div class="grupos-panel">
+                    <h4>Grupos</h4>
+                    <button class="btn-agregar" style="width:100%; margin-bottom:10px;" onclick="abrirModalGrupo()">Crear Grupo</button>
+                    <div id="lista-grupos">Cargando grupos...</div>
+                </div>
+            </div>
         </div>
 
         <div id="vista-sanciones" class="panel-box" style="display: none;">
@@ -636,6 +759,50 @@
         </div>
     </div>
 
+    <div id="modalDiaDiario" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <span class="close-modal" onclick="cerrarModal('modalDiaDiario')">&times;</span>
+            <h2 id="tituloDiaDiario" style="margin-top: 0; color: var(--azul);">Nota del día</h2>
+            <textarea id="textoDiaDiario" class="textarea-grande" style="min-height: 200px;"></textarea>
+            <button class="btn-submit" onclick="guardarNotaDia()">Guardar</button>
+        </div>
+    </div>
+
+    <div id="modalDiaAsistencia" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <span class="close-modal" onclick="cerrarModal('modalDiaAsistencia')">&times;</span>
+            <h2 id="tituloDiaAsistencia" style="margin-top: 0; color: var(--azul);">Asistencia del día</h2>
+            <button class="btn-agregar" style="width:100%; margin-bottom:12px;" onclick="marcarTodosPresentes()">&#10003; Marcar todos presentes</button>
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <select id="personaAsistenciaSelect" style="flex:1; padding:8px; border:1px solid var(--negro);"></select>
+                <button class="btn-agregar" onclick="agregarPersonaDia()">+ Persona</button>
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:15px;">
+                <select id="grupoAsistenciaSelect" style="flex:1; padding:8px; border:1px solid var(--negro);"></select>
+                <button class="btn-agregar" onclick="agregarGrupoDia()">+ Grupo</button>
+            </div>
+            <div id="listaAsistenciaDia" style="max-height: 300px; overflow-y: auto;">Cargando...</div>
+        </div>
+    </div>
+
+    <div id="modalGrupo" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal('modalGrupo')">&times;</span>
+            <h2 id="modalTitleGrupo" style="margin-top: 0; color: var(--azul);">Crear Grupo</h2>
+            <form id="formGrupo">
+                <div class="form-group">
+                    <label>Nombre del Grupo</label>
+                    <input type="text" id="nombreGrupo" placeholder="Ej. Turno Mañana" required>
+                </div>
+                <div class="form-group">
+                    <label>Personas</label>
+                    <div id="checkboxPersonasGrupo" style="max-height:220px; overflow-y:auto; border:1px solid #ccc; padding:10px;"></div>
+                </div>
+                <button type="submit" id="btnSubmitGrupo" class="btn-submit">Guardar Grupo</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // --- NAVEGACIÓN Y MENÚ ---
         function abrirMenu() { document.getElementById("miSidebar").style.width = "250px"; }
@@ -657,6 +824,8 @@
             else if (vista === 'legajo') cargarLegajos();
             else if (vista === 'epp') cargarEpp();
             else if (vista === 'vehiculos') { cargarVehiculos(); cargarCalendarioVehiculos(); }
+            else if (vista === 'diario') { cargarCalendarioDiario(); cargarDiarioGeneral(); }
+            else if (vista === 'asistencias') iniciarAsistencias();
 
             cerrarMenu();
         }
@@ -1422,6 +1591,448 @@
                 `;
                 cont.appendChild(div);
             });
+        }
+
+        // === LÓGICA DE DIARIO ===
+        let calendarioFechaDiario = new Date();
+        window.notasPorDia = {};
+        let fechaDiaDiarioSeleccionada = null;
+
+        function cambiarMesDiario(delta) {
+            calendarioFechaDiario.setMonth(calendarioFechaDiario.getMonth() + delta);
+            cargarCalendarioDiario();
+        }
+
+        async function cargarCalendarioDiario() {
+            const anio = calendarioFechaDiario.getFullYear();
+            const mes = calendarioFechaDiario.getMonth();
+            const primerDiaMes = new Date(anio, mes, 1);
+            const ultimoDiaMes = new Date(anio, mes + 1, 0);
+
+            document.getElementById('calendarioTituloDiario').innerText =
+                primerDiaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            window.notasPorDia = {};
+            try {
+                const desde = formatoYMD(primerDiaMes);
+                const hasta = formatoYMD(ultimoDiaMes);
+                const res = await fetch(`/api/diario-notas?desde=${desde}&hasta=${hasta}`, { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    const notas = await res.json();
+                    notas.forEach(n => { window.notasPorDia[formatoYMD(new Date(n.fecha))] = n; });
+                }
+            } catch (error) { console.error(error); }
+
+            renderCalendarioGridDiario(anio, mes, primerDiaMes, ultimoDiaMes);
+        }
+
+        function renderCalendarioGridDiario(anio, mes, primerDiaMes, ultimoDiaMes) {
+            const grid = document.getElementById('calendarioGridDiario');
+            grid.innerHTML = '';
+
+            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(nd => {
+                const cab = document.createElement('div');
+                cab.className = 'calendario-header-dia';
+                cab.innerText = nd;
+                grid.appendChild(cab);
+            });
+
+            const diaSemanaInicio = primerDiaMes.getDay();
+            for (let i = 0; i < diaSemanaInicio; i++) {
+                const vacio = document.createElement('div');
+                vacio.className = 'calendario-dia calendario-dia-vacio';
+                grid.appendChild(vacio);
+            }
+
+            const hoyStr = formatoYMD(new Date());
+            for (let dia = 1; dia <= ultimoDiaMes.getDate(); dia++) {
+                const clave = formatoYMD(new Date(anio, mes, dia));
+                const nota = window.notasPorDia[clave];
+                const celda = document.createElement('div');
+                celda.className = 'calendario-dia' + (clave === hoyStr ? ' hoy' : '');
+                celda.onclick = () => abrirDiaDiario(clave);
+
+                const preview = nota && nota.texto ? nota.texto.slice(0, 35) : '';
+                celda.innerHTML = `<span class="num-dia">${dia}</span>${preview ? `<div class="calendario-uso-item">${preview}</div>` : ''}`;
+                grid.appendChild(celda);
+            }
+        }
+
+        function abrirDiaDiario(fechaYMD) {
+            fechaDiaDiarioSeleccionada = fechaYMD;
+            const [y, m, d] = fechaYMD.split('-');
+            document.getElementById('tituloDiaDiario').innerText = `Nota del ${d}/${m}/${y}`;
+            const nota = window.notasPorDia[fechaYMD];
+            document.getElementById('textoDiaDiario').value = nota ? nota.texto : '';
+            document.getElementById('modalDiaDiario').style.display = 'block';
+        }
+
+        async function guardarNotaDia() {
+            const texto = document.getElementById('textoDiaDiario').value;
+            try {
+                const res = await fetch('/api/diario-notas', {
+                    method: 'PUT',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ fecha: fechaDiaDiarioSeleccionada, texto })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalDiaDiario');
+                    cargarCalendarioDiario();
+                }
+            } catch (error) { console.error(error); alert('Error al guardar la nota'); }
+        }
+
+        async function cargarDiarioGeneral() {
+            try {
+                const res = await fetch('/api/diario-general', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const data = await res.json();
+                document.getElementById('textoDiarioGeneral').value = data.texto || '';
+            } catch (error) { console.error(error); }
+        }
+
+        async function guardarDiarioGeneral() {
+            const texto = document.getElementById('textoDiarioGeneral').value;
+            try {
+                const res = await fetch('/api/diario-general', {
+                    method: 'PUT',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ texto })
+                });
+                manejarRespuestaAuth(res);
+                if (!res.ok) alert('Error al guardar');
+            } catch (error) { console.error(error); alert('Error al guardar'); }
+        }
+
+        // === LÓGICA DE ASISTENCIAS ===
+        let calendarioFechaAsistencias = new Date();
+        window.asistenciasPorDia = {};
+        window.currentGrupos = [];
+        window.legajoPersonasCache = [];
+        let fechaDiaAsistenciaSeleccionada = null;
+
+        function cambiarMesAsistencias(delta) {
+            calendarioFechaAsistencias.setMonth(calendarioFechaAsistencias.getMonth() + delta);
+            cargarCalendarioAsistencias();
+        }
+
+        async function cargarPersonasLegajo() {
+            try {
+                const res = await fetch('/api/legajos', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const legajos = await res.json();
+                window.legajoPersonasCache = legajos.map(l => l.persona);
+            } catch (error) { console.error(error); }
+        }
+
+        async function cargarCalendarioAsistencias() {
+            const anio = calendarioFechaAsistencias.getFullYear();
+            const mes = calendarioFechaAsistencias.getMonth();
+            const primerDiaMes = new Date(anio, mes, 1);
+            const ultimoDiaMes = new Date(anio, mes + 1, 0);
+
+            document.getElementById('calendarioTituloAsistencias').innerText =
+                primerDiaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            window.asistenciasPorDia = {};
+            try {
+                const desde = formatoYMD(primerDiaMes);
+                const hasta = formatoYMD(ultimoDiaMes);
+                const res = await fetch(`/api/asistencias?desde=${desde}&hasta=${hasta}`, { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    const registros = await res.json();
+                    registros.forEach(r => {
+                        const clave = formatoYMD(new Date(r.fecha));
+                        if (!window.asistenciasPorDia[clave]) window.asistenciasPorDia[clave] = [];
+                        window.asistenciasPorDia[clave].push(r);
+                    });
+                }
+            } catch (error) { console.error(error); }
+
+            renderCalendarioGridAsistencias(anio, mes, primerDiaMes, ultimoDiaMes);
+        }
+
+        function renderCalendarioGridAsistencias(anio, mes, primerDiaMes, ultimoDiaMes) {
+            const grid = document.getElementById('calendarioGridAsistencias');
+            grid.innerHTML = '';
+
+            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(nd => {
+                const cab = document.createElement('div');
+                cab.className = 'calendario-header-dia';
+                cab.innerText = nd;
+                grid.appendChild(cab);
+            });
+
+            const diaSemanaInicio = primerDiaMes.getDay();
+            for (let i = 0; i < diaSemanaInicio; i++) {
+                const vacio = document.createElement('div');
+                vacio.className = 'calendario-dia calendario-dia-vacio';
+                grid.appendChild(vacio);
+            }
+
+            const hoyStr = formatoYMD(new Date());
+            for (let dia = 1; dia <= ultimoDiaMes.getDate(); dia++) {
+                const clave = formatoYMD(new Date(anio, mes, dia));
+                const registros = window.asistenciasPorDia[clave] || [];
+                const presentes = registros.filter(r => r.estado === 'presente').length;
+                const ausentes = registros.filter(r => r.estado === 'ausente').length;
+                const tarde = registros.filter(r => r.estado === 'tarde').length;
+
+                const celda = document.createElement('div');
+                celda.className = 'calendario-dia' + (clave === hoyStr ? ' hoy' : '');
+                celda.onclick = () => abrirDiaAsistencia(clave);
+
+                let resumen = '';
+                if (presentes) resumen += `<span class="badge-presente">&#10003;${presentes}</span>`;
+                if (ausentes) resumen += `<span class="badge-ausente">&#10007;${ausentes}</span>`;
+                if (tarde) resumen += `<span class="badge-tarde">&minus;${tarde}</span>`;
+
+                celda.innerHTML = `<span class="num-dia">${dia}</span>${resumen}`;
+                grid.appendChild(celda);
+            }
+        }
+
+        function abrirDiaAsistencia(fechaYMD) {
+            fechaDiaAsistenciaSeleccionada = fechaYMD;
+            const [y, m, d] = fechaYMD.split('-');
+            document.getElementById('tituloDiaAsistencia').innerText = `Asistencia del ${d}/${m}/${y}`;
+
+            const yaAgregadas = (window.asistenciasPorDia[fechaYMD] || []).map(r => r.persona);
+            const disponibles = window.legajoPersonasCache.filter(p => !yaAgregadas.includes(p));
+            const selectPersona = document.getElementById('personaAsistenciaSelect');
+            selectPersona.innerHTML = disponibles.length
+                ? disponibles.map(p => `<option value="${p}">${p}</option>`).join('')
+                : '<option value="">No hay personas disponibles</option>';
+
+            const selectGrupo = document.getElementById('grupoAsistenciaSelect');
+            selectGrupo.innerHTML = window.currentGrupos.length
+                ? window.currentGrupos.map(g => `<option value="${g._id}">${g.nombre}</option>`).join('')
+                : '<option value="">No hay grupos</option>';
+
+            document.getElementById('modalDiaAsistencia').style.display = 'block';
+            renderListaAsistenciaDia();
+        }
+
+        function renderListaAsistenciaDia() {
+            const cont = document.getElementById('listaAsistenciaDia');
+            const registros = (window.asistenciasPorDia[fechaDiaAsistenciaSeleccionada] || [])
+                .slice().sort((a, b) => a.persona.localeCompare(b.persona));
+            cont.innerHTML = '';
+
+            if (registros.length === 0) {
+                cont.innerHTML = '<p style="color:#666;">Nadie agregado este día.</p>';
+                return;
+            }
+
+            registros.forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'asistencia-persona-row';
+                div.innerHTML = `
+                    <span class="asistencia-persona-nombre">${r.persona}</span>
+                    <div class="asistencia-estados">
+                        <button class="btn-estado presente ${r.estado === 'presente' ? 'activo' : ''}" title="Presente" onclick="cambiarEstadoAsistencia('${r._id}','presente')">&#10003;</button>
+                        <button class="btn-estado ausente ${r.estado === 'ausente' ? 'activo' : ''}" title="Ausente" onclick="cambiarEstadoAsistencia('${r._id}','ausente')">&#10007;</button>
+                        <button class="btn-estado tarde ${r.estado === 'tarde' ? 'activo' : ''}" title="Llegó tarde" onclick="cambiarEstadoAsistencia('${r._id}','tarde')">&minus;</button>
+                        <button class="btn-quitar" onclick="quitarPersonaDia('${r._id}')">Quitar</button>
+                    </div>
+                `;
+                cont.appendChild(div);
+            });
+        }
+
+        async function agregarPersonaDia() {
+            const persona = document.getElementById('personaAsistenciaSelect').value;
+            if (!persona) return;
+            try {
+                const res = await fetch('/api/asistencias', {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ fecha: fechaDiaAsistenciaSeleccionada, persona, estado: 'presente' })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    await cargarCalendarioAsistencias();
+                    abrirDiaAsistencia(fechaDiaAsistenciaSeleccionada);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function agregarGrupoDia() {
+            const grupoId = document.getElementById('grupoAsistenciaSelect').value;
+            if (!grupoId) return;
+            try {
+                const res = await fetch('/api/asistencias/grupo', {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ fecha: fechaDiaAsistenciaSeleccionada, grupoId })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    await cargarCalendarioAsistencias();
+                    abrirDiaAsistencia(fechaDiaAsistenciaSeleccionada);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function cambiarEstadoAsistencia(id, estado) {
+            try {
+                const res = await fetch(`/api/asistencias/${id}`, {
+                    method: 'PUT',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ estado })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    await cargarCalendarioAsistencias();
+                    renderListaAsistenciaDia();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function quitarPersonaDia(id) {
+            if (!confirm('¿Quitar a esta persona de este día?')) return;
+            try {
+                const res = await fetch(`/api/asistencias/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    await cargarCalendarioAsistencias();
+                    abrirDiaAsistencia(fechaDiaAsistenciaSeleccionada);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function marcarTodosPresentes() {
+            if (!fechaDiaAsistenciaSeleccionada) return;
+            try {
+                const res = await fetch('/api/asistencias/marcar-todos', {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ fecha: fechaDiaAsistenciaSeleccionada, estado: 'presente' })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    await cargarCalendarioAsistencias();
+                    renderListaAsistenciaDia();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        // --- Grupos de asistencia ---
+        let editGrupoId = null;
+
+        function abrirModalGrupo() {
+            editGrupoId = null;
+            document.getElementById('modalTitleGrupo').innerText = 'Crear Grupo';
+            document.getElementById('btnSubmitGrupo').innerText = 'Guardar Grupo';
+            document.getElementById('formGrupo').reset();
+            renderCheckboxPersonasGrupo([]);
+            document.getElementById('modalGrupo').style.display = 'block';
+        }
+
+        function renderCheckboxPersonasGrupo(seleccionadas) {
+            const cont = document.getElementById('checkboxPersonasGrupo');
+            if (window.legajoPersonasCache.length === 0) {
+                cont.innerHTML = '<p style="color:#666; margin:0;">No hay personas cargadas en Legajo todavía.</p>';
+                return;
+            }
+            cont.innerHTML = window.legajoPersonasCache.map(p => `
+                <label style="display:block; font-weight:normal; margin-bottom:6px; cursor:pointer;">
+                    <input type="checkbox" value="${p}" ${seleccionadas.includes(p) ? 'checked' : ''}> ${p}
+                </label>
+            `).join('');
+        }
+
+        function prepararEdicionGrupo(id) {
+            const g = window.currentGrupos.find(x => x._id === id);
+            if (!g) return;
+            editGrupoId = id;
+            document.getElementById('modalTitleGrupo').innerText = 'Editar Grupo';
+            document.getElementById('btnSubmitGrupo').innerText = 'Actualizar Grupo';
+            document.getElementById('nombreGrupo').value = g.nombre;
+            renderCheckboxPersonasGrupo(g.personas || []);
+            document.getElementById('modalGrupo').style.display = 'block';
+        }
+
+        document.getElementById('formGrupo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const personasSeleccionadas = Array.from(
+                document.querySelectorAll('#checkboxPersonasGrupo input[type=checkbox]:checked')
+            ).map(c => c.value);
+            const grupoData = {
+                nombre: document.getElementById('nombreGrupo').value,
+                personas: personasSeleccionadas
+            };
+            try {
+                const url = editGrupoId ? `/api/asistencia-grupos/${editGrupoId}` : '/api/asistencia-grupos';
+                const method = editGrupoId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(grupoData)
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalGrupo');
+                    cargarGrupos();
+                }
+            } catch (error) { console.error(error); alert('Error al guardar el grupo'); }
+        });
+
+        async function eliminarGrupo(id) {
+            if (!confirm('¿Eliminar este grupo?')) return;
+            try {
+                const res = await fetch(`/api/asistencia-grupos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) cargarGrupos();
+            } catch (error) { console.error(error); }
+        }
+
+        async function cargarGrupos() {
+            try {
+                const res = await fetch('/api/asistencia-grupos', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const grupos = await res.json();
+                window.currentGrupos = grupos;
+                const cont = document.getElementById('lista-grupos');
+                cont.innerHTML = '';
+
+                if (grupos.length === 0) {
+                    cont.innerHTML = '<p style="color:#666;">No hay grupos creados.</p>';
+                    return;
+                }
+
+                grupos.forEach(g => {
+                    const div = document.createElement('div');
+                    div.className = 'vehiculo-item';
+                    div.style.cursor = 'default';
+                    div.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                            <h5 style="margin:0;">${g.nombre}</h5>
+                            <div class="evento-actions" style="margin-top:0;">
+                                <button class="btn-action-edit" onclick="prepararEdicionGrupo('${g._id}')">Editar</button>
+                                <button class="btn-action-delete" onclick="eliminarGrupo('${g._id}')">Eliminar</button>
+                            </div>
+                        </div>
+                        <small>${g.personas.length} persona(s)${g.personas.length ? ': ' + g.personas.join(', ') : ''}</small>
+                    `;
+                    cont.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                document.getElementById('lista-grupos').innerHTML = '<p>Error al cargar los grupos.</p>';
+            }
+        }
+
+        async function iniciarAsistencias() {
+            await cargarPersonasLegajo();
+            await cargarGrupos();
+            await cargarCalendarioAsistencias();
         }
 
         // Iniciar la app: aplicar estado de sesion y cargar la cartelera
