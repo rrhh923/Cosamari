@@ -54,8 +54,9 @@
         .lock-btn:hover { color: var(--blanco); }
 
         /* Oculto por defecto: solo aparece si el body tiene la clase 'autenticado' */
-        .solo-autenticado { display: none !important; }
+        .solo-autenticado { display: none; }
         body.autenticado .solo-autenticado { display: initial; }
+        body.autenticado a.solo-autenticado { display: block; }
         body.autenticado .panel-header .btn-agregar.solo-autenticado { display: inline-block; }
         body.autenticado .evento-actions.solo-autenticado { display: flex; }
         
