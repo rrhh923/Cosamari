@@ -184,47 +184,28 @@
         .evento-card p { margin: 0; font-size: 14px; color: #555; }
         .evento-actions { display: flex; gap: 10px; margin-top: 10px; }
         
-        /* --- TARJETAS DE EMPLEADOS --- */
-        .empleado-card {
+        /* --- TARJETAS DE LEGAJOS --- */
+        .legajo-card {
             background: var(--blanco);
             border: 1px solid #ddd;
             border-left: 5px solid var(--azul);
             padding: 15px;
             margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
-        .empleado-info h5 {
-            margin: 0;
+        .legajo-card h5 {
+            margin: 0 0 8px 0;
             font-size: 18px;
             color: var(--negro);
             text-transform: uppercase;
         }
-        .empleado-info small {
-            color: #666;
-            font-size: 12px;
+        .legajo-datos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 6px 20px;
+            margin-bottom: 10px;
         }
-        .empleado-modulos {
-            display: flex;
-            gap: 8px;
-        }
-        .btn-modulo {
-            background: var(--blanco);
-            color: var(--azul);
-            border: 1px solid var(--azul);
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: pointer;
-            border-radius: 0;
-            transition: 0.2s;
-        }
-        .btn-modulo:hover {
-            background: var(--azul);
-            color: var(--blanco);
-        }
+        .legajo-datos p { margin: 0; font-size: 14px; color: #555; }
+        .legajo-datos strong { color: var(--negro); }
 
         /* Botones de acción genéricos */
         .btn-action-edit { background: var(--azul); color: var(--blanco); border: 1px solid var(--negro); padding: 5px 12px; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
@@ -250,8 +231,13 @@
     <div id="miSidebar" class="sidebar">
         <button class="close-btn" onclick="cerrarMenu()">&times;</button>
         <a href="javascript:void(0)" onclick="cambiarVista('cartelera')">Inicio / Cartelera</a>
-        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('empleados')">Empleados</a>
-        <a href="#" class="solo-autenticado">Configuracion</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('legajo')">Legajo</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('diario')">Diario</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('evaluacion')">Evaluación</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('asistencias')">Asistencias</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('sanciones')">Sanciones</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('epp')">EPP</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('vehiculos')">Vehículos</a>
         <a href="javascript:void(0)" class="solo-autenticado" onclick="cerrarSesion()">Cerrar sesion</a>
     </div>
 
@@ -278,14 +264,44 @@
             </div>
         </div>
 
-        <div id="vista-empleados" class="panel-box" style="display: none;">
+        <div id="vista-legajo" class="panel-box" style="display: none;">
             <div class="panel-header">
-                <h2>Lista de Empleados</h2>
-                <button class="btn-agregar" onclick="abrirModalEmpleado()">Agregar Empleado</button>
+                <h2>Legajo</h2>
+                <button class="btn-agregar" onclick="abrirModalLegajo()">Agregar Persona</button>
             </div>
             <div class="seccion-contenido">
-                <div id="lista-empleados">Cargando empleados...</div>
+                <div id="lista-legajos">Cargando legajos...</div>
             </div>
+        </div>
+
+        <div id="vista-diario" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>Diario</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+        </div>
+
+        <div id="vista-evaluacion" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>Evaluación</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+        </div>
+
+        <div id="vista-asistencias" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>Asistencias</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+        </div>
+
+        <div id="vista-sanciones" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>Sanciones</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+        </div>
+
+        <div id="vista-epp" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>EPP</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+        </div>
+
+        <div id="vista-vehiculos" class="panel-box" style="display: none;">
+            <div class="panel-header"><h2>Vehículos</h2></div>
+            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
         </div>
 
     </div>
@@ -331,16 +347,32 @@
         </div>
     </div>
 
-    <div id="modalEmpleado" class="modal">
+    <div id="modalLegajo" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="cerrarModal('modalEmpleado')">&times;</span>
-            <h2 style="margin-top: 0; color: var(--azul);">Agregar Empleado</h2>
-            <form id="formEmpleado">
+            <span class="close-modal" onclick="cerrarModal('modalLegajo')">&times;</span>
+            <h2 id="modalTitleLegajo" style="margin-top: 0; color: var(--azul);">Agregar Persona</h2>
+            <form id="formLegajo">
                 <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="nombreEmpleado" placeholder="Ej. Juan Perez" required>
+                    <label>Persona</label>
+                    <input type="text" id="personaLegajo" placeholder="Nombre completo" required>
                 </div>
-                <button type="submit" class="btn-submit">Guardar Empleado</button>
+                <div class="form-group">
+                    <label>DNI</label>
+                    <input type="text" id="dniLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Certificado</label>
+                    <input type="text" id="certificadoLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Carnet</label>
+                    <input type="text" id="carnetLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Antecedentes</label>
+                    <input type="text" id="antecedentesLegajo">
+                </div>
+                <button type="submit" id="btnSubmitLegajo" class="btn-submit">Guardar Persona</button>
             </form>
         </div>
     </div>
@@ -350,18 +382,21 @@
         function abrirMenu() { document.getElementById("miSidebar").style.width = "250px"; }
         function cerrarMenu() { document.getElementById("miSidebar").style.width = "0"; }
 
+        const VISTAS = ['cartelera', 'legajo', 'diario', 'evaluacion', 'asistencias', 'sanciones', 'epp', 'vehiculos'];
+
         function cambiarVista(vista) {
-            if (vista === 'empleados' && !window.authToken) { abrirModalLogin(); return; }
-            document.getElementById('vista-cartelera').style.display = 'none';
-            document.getElementById('vista-empleados').style.display = 'none';
-            
-            if(vista === 'cartelera') {
-                document.getElementById('vista-cartelera').style.display = 'flex';
-                cargarEventos();
-            } else if (vista === 'empleados') {
-                document.getElementById('vista-empleados').style.display = 'flex';
-                cargarEmpleados();
-            }
+            if (vista !== 'cartelera' && !window.authToken) { abrirModalLogin(); return; }
+
+            VISTAS.forEach(v => {
+                const el = document.getElementById('vista-' + v);
+                if (el) el.style.display = 'none';
+            });
+            const activa = document.getElementById('vista-' + vista);
+            if (activa) activa.style.display = 'flex';
+
+            if (vista === 'cartelera') cargarEventos();
+            else if (vista === 'legajo') cargarLegajos();
+
             cerrarMenu();
         }
 
@@ -380,8 +415,9 @@
                 btnLock.innerHTML = '&#128274;'; // candado cerrado
                 btnLock.title = 'Ingresar contraseña';
                 btnLock.onclick = abrirModalLogin;
-                // Si estabamos en la vista de empleados, volver a la cartelera
-                if (document.getElementById('vista-empleados').style.display !== 'none') {
+                // Si estabamos en una vista protegida, volver a la cartelera
+                const vistaCartelera = document.getElementById('vista-cartelera');
+                if (vistaCartelera.style.display === 'none') {
                     cambiarVista('cartelera');
                 }
             }
@@ -561,72 +597,109 @@
             } catch (error) { console.error(error); }
         }
 
-        // === LÓGICA DE EMPLEADOS ===
-        function abrirModalEmpleado() {
-            document.getElementById('formEmpleado').reset();
-            document.getElementById('modalEmpleado').style.display = "block";
+        // === LÓGICA DE LEGAJOS (PERSONAL) ===
+        let editLegajoId = null;
+        window.currentLegajos = [];
+
+        function abrirModalLegajo() {
+            editLegajoId = null;
+            document.getElementById('modalTitleLegajo').innerText = 'Agregar Persona';
+            document.getElementById('btnSubmitLegajo').innerText = 'Guardar Persona';
+            document.getElementById('formLegajo').reset();
+            document.getElementById('modalLegajo').style.display = "block";
         }
 
-        document.getElementById('formEmpleado').addEventListener('submit', async (e) => {
+        function prepararEdicionLegajo(id) {
+            const leg = window.currentLegajos.find(l => l._id === id);
+            if (!leg) return;
+
+            editLegajoId = id;
+            document.getElementById('modalTitleLegajo').innerText = 'Editar Persona';
+            document.getElementById('btnSubmitLegajo').innerText = 'Actualizar Persona';
+            document.getElementById('personaLegajo').value = leg.persona || '';
+            document.getElementById('dniLegajo').value = leg.dni || '';
+            document.getElementById('certificadoLegajo').value = leg.certificado || '';
+            document.getElementById('carnetLegajo').value = leg.carnet || '';
+            document.getElementById('antecedentesLegajo').value = leg.antecedentes || '';
+            document.getElementById('modalLegajo').style.display = "block";
+        }
+
+        document.getElementById('formLegajo').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const empleadoData = { nombre: document.getElementById('nombreEmpleado').value };
+            const legajoData = {
+                persona: document.getElementById('personaLegajo').value,
+                dni: document.getElementById('dniLegajo').value,
+                certificado: document.getElementById('certificadoLegajo').value,
+                carnet: document.getElementById('carnetLegajo').value,
+                antecedentes: document.getElementById('antecedentesLegajo').value
+            };
+
             try {
-                const res = await fetch('/api/employees', {
-                    method: 'POST',
+                const url = editLegajoId ? `/api/legajos/${editLegajoId}` : '/api/legajos';
+                const method = editLegajoId ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method: method,
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify(empleadoData)
+                    body: JSON.stringify(legajoData)
                 });
                 manejarRespuestaAuth(res);
                 if (res.ok) {
-                    cerrarModal('modalEmpleado');
-                    cargarEmpleados();
+                    cerrarModal('modalLegajo');
+                    cargarLegajos();
                 }
-            } catch (error) { console.error(error); alert("Error al guardar empleado"); }
+            } catch (error) { console.error(error); alert("Error al guardar el legajo"); }
         });
 
-        function abrirModulo(modulo, nombreEmpleado) {
-            // Esta funcion se configurara mas adelante segun tus indicaciones
-            alert(`Abriendo seccion de ${modulo.toUpperCase()} para el empleado: ${nombreEmpleado}`);
+        async function eliminarLegajo(id) {
+            if (!confirm("¿Eliminar este legajo?")) return;
+            try {
+                const res = await fetch(`/api/legajos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) cargarLegajos();
+            } catch (error) { console.error(error); }
         }
 
-        async function cargarEmpleados() {
+        function dato(etiqueta, valor) {
+            return `<p><strong>${etiqueta}:</strong> ${valor && valor.trim() ? valor : '-'}</p>`;
+        }
+
+        async function cargarLegajos() {
             try {
-                const res = await fetch('/api/employees', { headers: authHeaders() });
+                const res = await fetch('/api/legajos', { headers: authHeaders() });
                 manejarRespuestaAuth(res);
                 if (!res.ok) return;
-                const empleados = await res.json();
-                const contenedor = document.getElementById('lista-empleados');
+                const legajos = await res.json();
+                window.currentLegajos = legajos;
+                const contenedor = document.getElementById('lista-legajos');
                 contenedor.innerHTML = '';
 
-                if(empleados.length === 0) {
-                    contenedor.innerHTML = '<p style="color:#666;">No hay empleados registrados.</p>';
+                if (legajos.length === 0) {
+                    contenedor.innerHTML = '<p style="color:#666;">No hay personas registradas.</p>';
                     return;
                 }
 
-                empleados.forEach(emp => {
-                    const fechaCreacion = new Date(emp.createdAt).toLocaleDateString();
-                    
+                legajos.forEach(leg => {
                     const div = document.createElement('div');
-                    div.className = 'empleado-card';
-                    
+                    div.className = 'legajo-card';
                     div.innerHTML = `
-                        <div class="empleado-info">
-                            <h5>${emp.nombre}</h5>
-                            <small>Registrado el: ${fechaCreacion}</small>
+                        <h5>${leg.persona}</h5>
+                        <div class="legajo-datos">
+                            ${dato('DNI', leg.dni)}
+                            ${dato('Certificado', leg.certificado)}
+                            ${dato('Carnet', leg.carnet)}
+                            ${dato('Antecedentes', leg.antecedentes)}
                         </div>
-                        <div class="empleado-modulos">
-                            <button class="btn-modulo" onclick="abrirModulo('legajo', '${emp.nombre}')">Legajo</button>
-                            <button class="btn-modulo" onclick="abrirModulo('asistencias', '${emp.nombre}')">Asistencias</button>
-                            <button class="btn-modulo" onclick="abrirModulo('evaluacion', '${emp.nombre}')">Evaluacion</button>
-                            <button class="btn-modulo" onclick="abrirModulo('sanciones', '${emp.nombre}')">Sanciones</button>
-                            <button class="btn-modulo" onclick="abrirModulo('epp', '${emp.nombre}')">EPP</button>
+                        <div class="evento-actions">
+                            <button class="btn-action-edit" onclick="prepararEdicionLegajo('${leg._id}')">Editar</button>
+                            <button class="btn-action-delete" onclick="eliminarLegajo('${leg._id}')">Eliminar</button>
                         </div>
                     `;
                     contenedor.appendChild(div);
                 });
-            } catch (error) { 
-                console.error(error); 
-                document.getElementById('lista-empleados').innerHTML = '<p>Error al cargar empleados.</p>';
+            } catch (error) {
+                console.error(error);
+                document.getElementById('lista-legajos').innerHTML = '<p>Error al cargar los legajos.</p>';
             }
         }
 

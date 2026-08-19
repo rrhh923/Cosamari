@@ -58,12 +58,16 @@ const eventSchema = new mongoose.Schema({
 
 const Event = mongoose.model('Event', eventSchema);
 
-// Modelo de Empleados
-const employeeSchema = new mongoose.Schema({
-    nombre: { type: String, required: [true, 'El nombre del empleado es obligatorio'], trim: true }
+// Modelo de Legajos (fichas de personal)
+const legajoSchema = new mongoose.Schema({
+    persona: { type: String, required: [true, 'El nombre de la persona es obligatorio'], trim: true },
+    dni: { type: String, default: '', trim: true },
+    certificado: { type: String, default: '', trim: true },
+    carnet: { type: String, default: '', trim: true },
+    antecedentes: { type: String, default: '', trim: true }
 }, { timestamps: true }); // timestamps guarda automaticamente la fecha de creacion
 
-const Employee = mongoose.model('Employee', employeeSchema);
+const Legajo = mongoose.model('Legajo', legajoSchema);
 // 4. RUTAS DE LA API
 // --- RUTAS DE EVENTOS ---
 app.get('/api/events', async (req, res) => {
@@ -108,26 +112,46 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE EMPLEADOS ---
-app.get('/api/employees', requireAuth, async (req, res) => {
+// --- RUTAS DE LEGAJOS (fichas de personal) ---
+app.get('/api/legajos', requireAuth, async (req, res) => {
     try {
-        const employees = await Employee.find().sort({ createdAt: -1 }); // Los mas nuevos primero
-        res.status(200).json(employees);
+        const legajos = await Legajo.find().sort({ createdAt: -1 }); // Los mas nuevos primero
+        res.status(200).json(legajos);
     } catch (error) {
-        res.status(500).json({ error: 'Hubo un problema al obtener los empleados.' });
+        res.status(500).json({ error: 'Hubo un problema al obtener los legajos.' });
     }
 });
 
-app.post('/api/employees', requireAuth, async (req, res) => {
+app.post('/api/legajos', requireAuth, async (req, res) => {
     try {
-        const { nombre } = req.body;
-        if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
+        const { persona } = req.body;
+        if (!persona) return res.status(400).json({ error: 'El nombre de la persona es obligatorio.' });
 
-        const newEmployee = new Employee({ nombre });
-        const savedEmployee = await newEmployee.save();
-        res.status(201).json(savedEmployee);
+        const newLegajo = new Legajo(req.body);
+        const savedLegajo = await newLegajo.save();
+        res.status(201).json(savedLegajo);
     } catch (error) {
-        res.status(500).json({ error: 'Hubo un problema al guardar el empleado.' });
+        res.status(500).json({ error: 'Hubo un problema al guardar el legajo.' });
+    }
+});
+
+app.put('/api/legajos/:id', requireAuth, async (req, res) => {
+    try {
+        const updatedLegajo = await Legajo.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updatedLegajo) return res.status(404).json({ error: 'El legajo no existe.' });
+        res.status(200).json(updatedLegajo);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al actualizar el legajo.' });
+    }
+});
+
+app.delete('/api/legajos/:id', requireAuth, async (req, res) => {
+    try {
+        const deletedLegajo = await Legajo.findByIdAndDelete(req.params.id);
+        if (!deletedLegajo) return res.status(404).json({ error: 'El legajo no existe.' });
+        res.status(200).json({ message: 'Legajo eliminado.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al eliminar el legajo.' });
     }
 });
 
