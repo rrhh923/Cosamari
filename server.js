@@ -64,7 +64,15 @@ const legajoSchema = new mongoose.Schema({
     dni: { type: String, default: '', trim: true },
     certificado: { type: String, default: '', trim: true },
     carnet: { type: String, default: '', trim: true },
-    antecedentes: { type: String, default: '', trim: true }
+    antecedentes: { type: String, default: '', trim: true },
+    experiencia: { type: String, enum: ['', 'junior', 'semi junior', 'senior', 'supervisor', 'gerente'], default: '' },
+    cargo: { type: String, default: '', trim: true },
+    departamento: { type: String, default: '', trim: true },
+    telefono: { type: String, default: '', trim: true },
+    edad: { type: Number, default: null },
+    gmail: { type: String, default: '', trim: true },
+    fechaNacimiento: { type: Date, default: null },
+    fechaIngreso: { type: Date, default: null }
 }, { timestamps: true }); // timestamps guarda automaticamente la fecha de creacion
 
 const Legajo = mongoose.model('Legajo', legajoSchema);
@@ -173,6 +181,16 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
 });
 
 // --- RUTAS DE LEGAJOS (fichas de personal) ---
+
+// Convierte valores vacios ('') a null para que Mongoose no falle al castear numeros/fechas
+function normalizarLegajo(body) {
+    const datos = { ...body };
+    if (datos.edad === '' || datos.edad === undefined) datos.edad = null;
+    if (datos.fechaNacimiento === '' || datos.fechaNacimiento === undefined) datos.fechaNacimiento = null;
+    if (datos.fechaIngreso === '' || datos.fechaIngreso === undefined) datos.fechaIngreso = null;
+    return datos;
+}
+
 app.get('/api/legajos', requireAuth, async (req, res) => {
     try {
         const legajos = await Legajo.find().sort({ createdAt: -1 }); // Los mas nuevos primero
@@ -182,12 +200,38 @@ app.get('/api/legajos', requireAuth, async (req, res) => {
     }
 });
 
+// Cumpleaños dentro de los proximos 7 dias (para mostrar en la Cartelera)
+app.get('/api/legajos/cumpleanos', requireAuth, async (req, res) => {
+    try {
+        const legajos = await Legajo.find({ fechaNacimiento: { $ne: null } });
+        const hoy = new Date();
+        const hoyUTC = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+
+        const proximos = legajos
+            .map(l => {
+                const fn = new Date(l.fechaNacimiento);
+                let cumpleAnioActual = Date.UTC(hoy.getFullYear(), fn.getUTCMonth(), fn.getUTCDate());
+                if (cumpleAnioActual < hoyUTC) {
+                    cumpleAnioActual = Date.UTC(hoy.getFullYear() + 1, fn.getUTCMonth(), fn.getUTCDate());
+                }
+                const diasFaltantes = Math.round((cumpleAnioActual - hoyUTC) / (1000 * 60 * 60 * 24));
+                return { _id: l._id, persona: l.persona, fechaNacimiento: l.fechaNacimiento, diasFaltantes };
+            })
+            .filter(item => item.diasFaltantes >= 0 && item.diasFaltantes <= 7)
+            .sort((a, b) => a.diasFaltantes - b.diasFaltantes);
+
+        res.status(200).json(proximos);
+    } catch (error) {
+        res.status(500).json({ error: 'Hubo un problema al obtener los cumpleaños.' });
+    }
+});
+
 app.post('/api/legajos', requireAuth, async (req, res) => {
     try {
         const { persona } = req.body;
         if (!persona) return res.status(400).json({ error: 'El nombre de la persona es obligatorio.' });
 
-        const newLegajo = new Legajo(req.body);
+        const newLegajo = new Legajo(normalizarLegajo(req.body));
         const savedLegajo = await newLegajo.save();
         res.status(201).json(savedLegajo);
     } catch (error) {
@@ -197,7 +241,7 @@ app.post('/api/legajos', requireAuth, async (req, res) => {
 
 app.put('/api/legajos/:id', requireAuth, async (req, res) => {
     try {
-        const updatedLegajo = await Legajo.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedLegajo = await Legajo.findByIdAndUpdate(req.params.id, normalizarLegajo(req.body), { new: true });
         if (!updatedLegajo) return res.status(404).json({ error: 'El legajo no existe.' });
         res.status(200).json(updatedLegajo);
     } catch (error) {

@@ -460,7 +460,7 @@
 
         /* --- VENTANAS MODALES --- */
         .modal { display: none; position: fixed; z-index: 20; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
-        .modal-content { background-color: var(--blanco); margin: 8% auto; padding: 25px; border: 3px solid var(--azul); border-radius: 0; width: 90%; max-width: 400px; position: relative; }
+        .modal-content { background-color: var(--blanco); margin: 5% auto; padding: 25px; border: 3px solid var(--azul); border-radius: 0; width: 90%; max-width: 400px; max-height: 88vh; overflow-y: auto; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; color: var(--negro); cursor: pointer; }
         .close-modal:hover { color: var(--azul); }
         
@@ -498,6 +498,10 @@
             <div class="panel-header">
                 <h2>Cartelera</h2>
                 <button class="btn-agregar solo-autenticado" onclick="abrirModalEvento()">Agregar evento</button>
+            </div>
+            <div id="seccionCumpleanos" class="seccion-secundaria" style="display:none; border-top:none; border-bottom:2px solid var(--amarillo);">
+                <h4>🎂 Cumpleaños Próximos</h4>
+                <div id="lista-cumpleanos"></div>
             </div>
             <div class="seccion-contenido">
                 <h3>Eventos de Hoy</h3>
@@ -653,6 +657,45 @@
                 <div class="form-group">
                     <label>DNI</label>
                     <input type="text" id="dniLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Experiencia</label>
+                    <select id="experienciaLegajo">
+                        <option value="">Sin especificar</option>
+                        <option value="junior">Junior</option>
+                        <option value="semi junior">Semi Junior</option>
+                        <option value="senior">Senior</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="gerente">Gerente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cargo</label>
+                    <input type="text" id="cargoLegajo" placeholder="Ej. Operario, Administrativo">
+                </div>
+                <div class="form-group">
+                    <label>Departamento</label>
+                    <input type="text" id="departamentoLegajo" placeholder="Ej. Producción, Ventas">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="telefonoLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Edad</label>
+                    <input type="number" id="edadLegajo" min="0" max="120">
+                </div>
+                <div class="form-group">
+                    <label>Gmail</label>
+                    <input type="email" id="gmailLegajo" placeholder="nombre@gmail.com">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Nacimiento</label>
+                    <input type="date" id="fechaNacimientoLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Ingreso</label>
+                    <input type="date" id="fechaIngresoLegajo">
                 </div>
                 <div class="form-group">
                     <label>Certificado</label>
@@ -820,7 +863,7 @@
             const activa = document.getElementById('vista-' + vista);
             if (activa) activa.style.display = 'flex';
 
-            if (vista === 'cartelera') cargarEventos();
+            if (vista === 'cartelera') { cargarEventos(); cargarCumpleanos(); }
             else if (vista === 'legajo') cargarLegajos();
             else if (vista === 'epp') cargarEpp();
             else if (vista === 'vehiculos') { cargarVehiculos(); cargarCalendarioVehiculos(); }
@@ -851,6 +894,7 @@
                     cambiarVista('cartelera');
                 }
             }
+            cargarCumpleanos();
         }
 
         function abrirModalLogin() {
@@ -913,6 +957,30 @@
         }
 
         // === LÓGICA DE EVENTOS (CARTELERA) ===
+        async function cargarCumpleanos() {
+            const seccion = document.getElementById('seccionCumpleanos');
+            if (!seccion) return;
+            if (!window.authToken) { seccion.style.display = 'none'; return; }
+            try {
+                const res = await fetch('/api/legajos/cumpleanos', { headers: authHeaders() });
+                if (!res.ok) { seccion.style.display = 'none'; return; }
+                const cumples = await res.json();
+                if (cumples.length === 0) { seccion.style.display = 'none'; return; }
+
+                const cont = document.getElementById('lista-cumpleanos');
+                cont.innerHTML = cumples.map(c => {
+                    const fn = new Date(c.fechaNacimiento);
+                    const fechaFmt = `${String(fn.getUTCDate()).padStart(2, '0')}/${String(fn.getUTCMonth() + 1).padStart(2, '0')}`;
+                    const texto = c.diasFaltantes === 0 ? '¡Hoy!' : (c.diasFaltantes === 1 ? 'Mañana' : `En ${c.diasFaltantes} días`);
+                    return `<div class="evento-card"><h5>🎂 ${c.persona}</h5><p>${fechaFmt} — ${texto}</p></div>`;
+                }).join('');
+                seccion.style.display = 'block';
+            } catch (error) {
+                console.error(error);
+                seccion.style.display = 'none';
+            }
+        }
+
         let editEventId = null;
         window.currentEvents = [];
 
@@ -1048,6 +1116,14 @@
             document.getElementById('btnSubmitLegajo').innerText = 'Actualizar Persona';
             document.getElementById('personaLegajo').value = leg.persona || '';
             document.getElementById('dniLegajo').value = leg.dni || '';
+            document.getElementById('experienciaLegajo').value = leg.experiencia || '';
+            document.getElementById('cargoLegajo').value = leg.cargo || '';
+            document.getElementById('departamentoLegajo').value = leg.departamento || '';
+            document.getElementById('telefonoLegajo').value = leg.telefono || '';
+            document.getElementById('edadLegajo').value = (leg.edad === null || leg.edad === undefined) ? '' : leg.edad;
+            document.getElementById('gmailLegajo').value = leg.gmail || '';
+            document.getElementById('fechaNacimientoLegajo').value = leg.fechaNacimiento ? new Date(leg.fechaNacimiento).toISOString().slice(0, 10) : '';
+            document.getElementById('fechaIngresoLegajo').value = leg.fechaIngreso ? new Date(leg.fechaIngreso).toISOString().slice(0, 10) : '';
             document.getElementById('certificadoLegajo').value = leg.certificado || '';
             document.getElementById('carnetLegajo').value = leg.carnet || '';
             document.getElementById('antecedentesLegajo').value = leg.antecedentes || '';
@@ -1056,9 +1132,18 @@
 
         document.getElementById('formLegajo').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const edadValor = document.getElementById('edadLegajo').value;
             const legajoData = {
                 persona: document.getElementById('personaLegajo').value,
                 dni: document.getElementById('dniLegajo').value,
+                experiencia: document.getElementById('experienciaLegajo').value,
+                cargo: document.getElementById('cargoLegajo').value,
+                departamento: document.getElementById('departamentoLegajo').value,
+                telefono: document.getElementById('telefonoLegajo').value,
+                edad: edadValor ? Number(edadValor) : null,
+                gmail: document.getElementById('gmailLegajo').value,
+                fechaNacimiento: document.getElementById('fechaNacimientoLegajo').value || null,
+                fechaIngreso: document.getElementById('fechaIngresoLegajo').value || null,
                 certificado: document.getElementById('certificadoLegajo').value,
                 carnet: document.getElementById('carnetLegajo').value,
                 antecedentes: document.getElementById('antecedentesLegajo').value
@@ -1077,6 +1162,7 @@
                 if (res.ok) {
                     cerrarModal('modalLegajo');
                     cargarLegajos();
+                    cargarCumpleanos();
                 }
             } catch (error) { console.error(error); alert("Error al guardar el legajo"); }
         });
@@ -1086,13 +1172,21 @@
             try {
                 const res = await fetch(`/api/legajos/${id}`, { method: 'DELETE', headers: authHeaders() });
                 manejarRespuestaAuth(res);
-                if (res.ok) cargarLegajos();
+                if (res.ok) { cargarLegajos(); cargarCumpleanos(); }
             } catch (error) { console.error(error); }
         }
 
         function dato(etiqueta, valor) {
-            return `<p><strong>${etiqueta}:</strong> ${valor && valor.trim() ? valor : '-'}</p>`;
+            return `<p><strong>${etiqueta}:</strong> ${valor && String(valor).trim() ? valor : '-'}</p>`;
         }
+
+        function fechaCorta(fechaISO) {
+            if (!fechaISO) return '';
+            const d = new Date(fechaISO);
+            return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+        }
+
+        const ETIQUETAS_EXPERIENCIA = { junior: 'Junior', 'semi junior': 'Semi Junior', senior: 'Senior', supervisor: 'Supervisor', gerente: 'Gerente' };
 
         async function cargarLegajos() {
             try {
@@ -1124,6 +1218,14 @@
                         <div class="legajo-detalle">
                             <div class="legajo-datos">
                                 ${dato('DNI', leg.dni)}
+                                ${dato('Experiencia', ETIQUETAS_EXPERIENCIA[leg.experiencia] || '')}
+                                ${dato('Cargo', leg.cargo)}
+                                ${dato('Departamento', leg.departamento)}
+                                ${dato('Teléfono', leg.telefono)}
+                                ${dato('Edad', (leg.edad === null || leg.edad === undefined) ? '' : leg.edad)}
+                                ${dato('Gmail', leg.gmail)}
+                                ${dato('Fecha Nacimiento', fechaCorta(leg.fechaNacimiento))}
+                                ${dato('Fecha Ingreso', fechaCorta(leg.fechaIngreso))}
                                 ${dato('Certificado', leg.certificado)}
                                 ${dato('Carnet', leg.carnet)}
                                 ${dato('Antecedentes', leg.antecedentes)}
