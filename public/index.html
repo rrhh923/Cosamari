@@ -185,20 +185,42 @@
         .evento-card p { margin: 0; font-size: 14px; color: #555; }
         .evento-actions { display: flex; gap: 10px; margin-top: 10px; }
         
-        /* --- TARJETAS DE LEGAJOS --- */
+        /* --- TARJETAS DE LEGAJOS (colapsable) --- */
         .legajo-card {
             background: var(--blanco);
             border: 1px solid #ddd;
             border-left: 5px solid var(--azul);
-            padding: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
-        .legajo-card h5 {
-            margin: 0 0 8px 0;
+        .legajo-header {
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .legajo-header:hover { background-color: var(--gris-claro); }
+        .legajo-header h5 {
+            margin: 0;
             font-size: 18px;
             color: var(--negro);
             text-transform: uppercase;
         }
+        .legajo-header h5::before {
+            content: '\25B6';
+            display: inline-block;
+            font-size: 12px;
+            color: var(--azul);
+            margin-right: 10px;
+            transition: transform 0.2s;
+        }
+        .legajo-card.abierto .legajo-header h5::before { transform: rotate(90deg); }
+        .legajo-detalle {
+            display: none;
+            padding: 0 15px 15px 15px;
+            border-top: 1px solid #eee;
+        }
+        .legajo-card.abierto .legajo-detalle { display: block; padding-top: 12px; }
         .legajo-datos {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -207,6 +229,133 @@
         }
         .legajo-datos p { margin: 0; font-size: 14px; color: #555; }
         .legajo-datos strong { color: var(--negro); }
+
+        /* --- TARJETAS DE EPP --- */
+        .epp-card {
+            background: var(--blanco);
+            border: 1px solid #ddd;
+            border-left: 5px solid var(--azul);
+            padding: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .epp-imagen-placeholder {
+            width: 60px;
+            height: 60px;
+            flex-shrink: 0;
+            background: var(--gris-claro);
+            border: 1px dashed #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #999;
+        }
+        .epp-info { flex: 1; }
+        .epp-info h5 { margin: 0 0 4px 0; font-size: 16px; color: var(--negro); }
+        .epp-info p { margin: 0; font-size: 13px; color: #555; }
+
+        /* --- VEHICULOS: CALENDARIO --- */
+        .vehiculos-layout {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .calendario-panel { flex: 2; min-width: 280px; }
+        .vehiculos-lista-panel {
+            flex: 1;
+            min-width: 220px;
+            border-left: 2px solid var(--azul);
+            padding-left: 20px;
+        }
+        .calendario-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .calendario-nav button {
+            background: var(--azul);
+            color: var(--blanco);
+            border: none;
+            padding: 6px 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .calendario-nav button:hover { background: var(--amarillo); color: var(--negro); }
+        .calendario-nav h3 { margin: 0; border: none; padding: 0; text-transform: capitalize; }
+        .calendario-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendario-header-dia {
+            text-align: center;
+            font-weight: bold;
+            color: var(--blanco);
+            background: var(--azul);
+            font-size: 11px;
+            padding: 6px 0;
+            text-transform: uppercase;
+        }
+        .calendario-dia {
+            border: 1px solid #ddd;
+            min-height: 65px;
+            padding: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            background: var(--blanco);
+            overflow: hidden;
+        }
+        .calendario-dia:hover { background: var(--gris-claro); border-color: var(--azul); }
+        .calendario-dia.hoy { border: 2px solid var(--amarillo); }
+        .calendario-dia .num-dia { font-weight: bold; color: var(--azul); display: block; margin-bottom: 3px; }
+        .calendario-dia-vacio { background: transparent; border: none; cursor: default; }
+        .calendario-uso-item {
+            font-size: 10px;
+            background: var(--amarillo);
+            color: var(--negro);
+            margin-top: 2px;
+            padding: 1px 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .vehiculo-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-left: 4px solid var(--azul);
+            margin-bottom: 10px;
+            cursor: pointer;
+            background: var(--blanco);
+        }
+        .vehiculo-item:hover { background: var(--gris-claro); }
+        .vehiculo-item h5 { margin: 0; font-size: 15px; color: var(--negro); }
+        .vehiculo-item small { color: #666; }
+        .registro-item {
+            border-bottom: 1px solid #eee;
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .registro-item:last-child { border-bottom: none; }
+        .registro-tag {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            color: var(--blanco);
+        }
+        .registro-tag.uso { background: var(--azul); }
+        .registro-tag.mantenimiento { background: #cc7a00; }
 
         /* Botones de acción genéricos */
         .btn-action-edit { background: var(--azul); color: var(--blanco); border: 1px solid var(--negro); padding: 5px 12px; font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
@@ -222,7 +371,7 @@
         
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--negro); }
-        .form-group input[type="text"], .form-group input[type="datetime-local"] { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid var(--negro); border-radius: 0; }
+        .form-group input[type="text"], .form-group input[type="datetime-local"], .form-group input[type="date"], .form-group select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid var(--negro); border-radius: 0; font-family: inherit; font-size: 14px; }
         .btn-submit { width: 100%; padding: 12px; background: var(--azul); color: var(--blanco); border: 1px solid var(--negro); font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-submit:hover { background: var(--amarillo); color: var(--negro); }
     </style>
@@ -296,13 +445,34 @@
         </div>
 
         <div id="vista-epp" class="panel-box" style="display: none;">
-            <div class="panel-header"><h2>EPP</h2></div>
-            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+            <div class="panel-header">
+                <h2>EPP</h2>
+                <button class="btn-agregar" onclick="abrirModalEpp()">Agregar EPP</button>
+            </div>
+            <div class="seccion-contenido">
+                <div id="lista-epp">Cargando EPP...</div>
+            </div>
         </div>
 
         <div id="vista-vehiculos" class="panel-box" style="display: none;">
-            <div class="panel-header"><h2>Vehículos</h2></div>
-            <div class="seccion-contenido"><p style="color:#666;">Sección en construcción. Próximamente disponible.</p></div>
+            <div class="panel-header">
+                <h2>Vehículos</h2>
+                <button class="btn-agregar" onclick="abrirModalVehiculo()">Agregar Vehículo</button>
+            </div>
+            <div class="vehiculos-layout">
+                <div class="calendario-panel">
+                    <div class="calendario-nav">
+                        <button onclick="cambiarMesCalendario(-1)">&laquo;</button>
+                        <h3 id="calendarioTitulo"></h3>
+                        <button onclick="cambiarMesCalendario(1)">&raquo;</button>
+                    </div>
+                    <div class="calendario-grid" id="calendarioGrid"></div>
+                </div>
+                <div class="vehiculos-lista-panel">
+                    <h4>Vehículos</h4>
+                    <div id="lista-vehiculos">Cargando vehículos...</div>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -378,6 +548,94 @@
         </div>
     </div>
 
+    <div id="modalEpp" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal('modalEpp')">&times;</span>
+            <h2 id="modalTitleEpp" style="margin-top: 0; color: var(--azul);">Agregar EPP</h2>
+            <form id="formEpp">
+                <div class="form-group">
+                    <label>Imagen</label>
+                    <div class="epp-imagen-placeholder" style="width:100%; height:80px;">Próximamente</div>
+                </div>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="nombreEpp" placeholder="Ej. Casco, Guantes, Arnes" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="fechaEpp" required>
+                </div>
+                <button type="submit" id="btnSubmitEpp" class="btn-submit">Guardar EPP</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalVehiculo" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal('modalVehiculo')">&times;</span>
+            <h2 id="modalTitleVehiculo" style="margin-top: 0; color: var(--azul);">Agregar Vehículo</h2>
+            <form id="formVehiculo">
+                <div class="form-group">
+                    <label>Nombre / Modelo</label>
+                    <input type="text" id="nombreVehiculo" placeholder="Ej. Camioneta Hilux" required>
+                </div>
+                <div class="form-group">
+                    <label>Patente</label>
+                    <input type="text" id="patenteVehiculo">
+                </div>
+                <button type="submit" id="btnSubmitVehiculo" class="btn-submit">Guardar Vehículo</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalDetalleVehiculo" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <span class="close-modal" onclick="cerrarModal('modalDetalleVehiculo')">&times;</span>
+            <h2 id="tituloDetalleVehiculo" style="margin-top: 0; color: var(--azul);">Vehículo</h2>
+            <div class="evento-actions" style="margin-bottom:15px;">
+                <button class="btn-action-edit" onclick="prepararEdicionVehiculoDesdeDetalle()">Editar Vehículo</button>
+                <button class="btn-action-delete" onclick="eliminarVehiculoActual()">Eliminar Vehículo</button>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button class="btn-agregar" style="flex:1;" onclick="abrirModalRegistro('uso')">+ Uso</button>
+                <button class="btn-agregar" style="flex:1;" onclick="abrirModalRegistro('mantenimiento')">+ Mantenimiento</button>
+            </div>
+            <div id="listaRegistrosVehiculo" style="max-height: 350px; overflow-y: auto;">Cargando...</div>
+        </div>
+    </div>
+
+    <div id="modalDiaVehiculo" class="modal">
+        <div class="modal-content" style="max-width: 550px;">
+            <span class="close-modal" onclick="cerrarModal('modalDiaVehiculo')">&times;</span>
+            <h2 id="tituloDiaVehiculo" style="margin-top: 0; color: var(--azul);">Uso del día</h2>
+            <button class="btn-agregar" style="width:100%; margin-bottom:15px;" onclick="abrirModalRegistro('uso', true)">+ Agregar vehículo usado</button>
+            <div id="listaUsoDia" style="max-height: 350px; overflow-y: auto;">Cargando...</div>
+        </div>
+    </div>
+
+    <div id="modalRegistroVehiculo" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal('modalRegistroVehiculo')">&times;</span>
+            <h2 id="modalTitleRegistro" style="margin-top: 0; color: var(--azul);">Agregar Registro</h2>
+            <form id="formRegistroVehiculo">
+                <div class="form-group" id="grupoVehiculoRegistro">
+                    <label>Vehículo</label>
+                    <select id="vehiculoRegistro" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="fechaRegistro" required>
+                </div>
+                <input type="hidden" id="tipoRegistro" value="uso">
+                <div class="form-group">
+                    <label id="labelDetalleRegistro">Persona (quién lo usa)</label>
+                    <input type="text" id="detalleRegistro" required>
+                </div>
+                <button type="submit" id="btnSubmitRegistro" class="btn-submit">Guardar</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // --- NAVEGACIÓN Y MENÚ ---
         function abrirMenu() { document.getElementById("miSidebar").style.width = "250px"; }
@@ -397,6 +655,8 @@
 
             if (vista === 'cartelera') cargarEventos();
             else if (vista === 'legajo') cargarLegajos();
+            else if (vista === 'epp') cargarEpp();
+            else if (vista === 'vehiculos') { cargarVehiculos(); cargarCalendarioVehiculos(); }
 
             cerrarMenu();
         }
@@ -683,17 +943,22 @@
                 legajos.forEach(leg => {
                     const div = document.createElement('div');
                     div.className = 'legajo-card';
+                    div.id = 'legajo-' + leg._id;
                     div.innerHTML = `
-                        <h5>${leg.persona}</h5>
-                        <div class="legajo-datos">
-                            ${dato('DNI', leg.dni)}
-                            ${dato('Certificado', leg.certificado)}
-                            ${dato('Carnet', leg.carnet)}
-                            ${dato('Antecedentes', leg.antecedentes)}
+                        <div class="legajo-header" onclick="toggleLegajo('${leg._id}')">
+                            <h5>${leg.persona}</h5>
+                            <div class="evento-actions" style="margin-top:0;" onclick="event.stopPropagation()">
+                                <button class="btn-action-edit" onclick="prepararEdicionLegajo('${leg._id}')">Editar</button>
+                                <button class="btn-action-delete" onclick="eliminarLegajo('${leg._id}')">Eliminar</button>
+                            </div>
                         </div>
-                        <div class="evento-actions">
-                            <button class="btn-action-edit" onclick="prepararEdicionLegajo('${leg._id}')">Editar</button>
-                            <button class="btn-action-delete" onclick="eliminarLegajo('${leg._id}')">Eliminar</button>
+                        <div class="legajo-detalle">
+                            <div class="legajo-datos">
+                                ${dato('DNI', leg.dni)}
+                                ${dato('Certificado', leg.certificado)}
+                                ${dato('Carnet', leg.carnet)}
+                                ${dato('Antecedentes', leg.antecedentes)}
+                            </div>
                         </div>
                     `;
                     contenedor.appendChild(div);
@@ -702,6 +967,461 @@
                 console.error(error);
                 document.getElementById('lista-legajos').innerHTML = '<p>Error al cargar los legajos.</p>';
             }
+        }
+
+        function toggleLegajo(id) {
+            const card = document.getElementById('legajo-' + id);
+            if (card) card.classList.toggle('abierto');
+        }
+
+        // === LÓGICA DE EPP ===
+        let editEppId = null;
+        window.currentEpp = [];
+
+        function abrirModalEpp() {
+            editEppId = null;
+            document.getElementById('modalTitleEpp').innerText = 'Agregar EPP';
+            document.getElementById('btnSubmitEpp').innerText = 'Guardar EPP';
+            document.getElementById('formEpp').reset();
+            document.getElementById('modalEpp').style.display = "block";
+        }
+
+        function prepararEdicionEpp(id) {
+            const item = window.currentEpp.find(e => e._id === id);
+            if (!item) return;
+            editEppId = id;
+            document.getElementById('modalTitleEpp').innerText = 'Editar EPP';
+            document.getElementById('btnSubmitEpp').innerText = 'Actualizar EPP';
+            document.getElementById('nombreEpp').value = item.nombre;
+            document.getElementById('fechaEpp').value = new Date(item.fecha).toISOString().slice(0, 10);
+            document.getElementById('modalEpp').style.display = "block";
+        }
+
+        document.getElementById('formEpp').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const eppData = {
+                nombre: document.getElementById('nombreEpp').value,
+                fecha: document.getElementById('fechaEpp').value
+            };
+            try {
+                const url = editEppId ? `/api/epp/${editEppId}` : '/api/epp';
+                const method = editEppId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(eppData)
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalEpp');
+                    cargarEpp();
+                }
+            } catch (error) { console.error(error); alert("Error al guardar el EPP"); }
+        });
+
+        async function eliminarEpp(id) {
+            if (!confirm("¿Eliminar este EPP?")) return;
+            try {
+                const res = await fetch(`/api/epp/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) cargarEpp();
+            } catch (error) { console.error(error); }
+        }
+
+        async function cargarEpp() {
+            try {
+                const res = await fetch('/api/epp', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const items = await res.json();
+                window.currentEpp = items;
+                const contenedor = document.getElementById('lista-epp');
+                contenedor.innerHTML = '';
+
+                if (items.length === 0) {
+                    contenedor.innerHTML = '<p style="color:#666;">No hay EPP registrados.</p>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const fechaFmt = new Date(item.fecha).toLocaleDateString();
+                    const div = document.createElement('div');
+                    div.className = 'epp-card';
+                    div.innerHTML = `
+                        <div class="epp-imagen-placeholder">📷</div>
+                        <div class="epp-info">
+                            <h5>${item.nombre}</h5>
+                            <p>Fecha: ${fechaFmt}</p>
+                            <div class="evento-actions">
+                                <button class="btn-action-edit" onclick="prepararEdicionEpp('${item._id}')">Editar</button>
+                                <button class="btn-action-delete" onclick="eliminarEpp('${item._id}')">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                    contenedor.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                document.getElementById('lista-epp').innerHTML = '<p>Error al cargar los EPP.</p>';
+            }
+        }
+
+        // === LÓGICA DE VEHICULOS ===
+        let editVehiculoId = null;
+        window.currentVehiculos = [];
+
+        function abrirModalVehiculo() {
+            editVehiculoId = null;
+            document.getElementById('modalTitleVehiculo').innerText = 'Agregar Vehículo';
+            document.getElementById('btnSubmitVehiculo').innerText = 'Guardar Vehículo';
+            document.getElementById('formVehiculo').reset();
+            document.getElementById('modalVehiculo').style.display = "block";
+        }
+
+        function prepararEdicionVehiculo(id) {
+            const v = window.currentVehiculos.find(x => x._id === id);
+            if (!v) return;
+            editVehiculoId = id;
+            document.getElementById('modalTitleVehiculo').innerText = 'Editar Vehículo';
+            document.getElementById('btnSubmitVehiculo').innerText = 'Actualizar Vehículo';
+            document.getElementById('nombreVehiculo').value = v.nombre;
+            document.getElementById('patenteVehiculo').value = v.patente || '';
+            document.getElementById('modalVehiculo').style.display = "block";
+        }
+
+        document.getElementById('formVehiculo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const vehiculoData = {
+                nombre: document.getElementById('nombreVehiculo').value,
+                patente: document.getElementById('patenteVehiculo').value
+            };
+            try {
+                const url = editVehiculoId ? `/api/vehiculos/${editVehiculoId}` : '/api/vehiculos';
+                const method = editVehiculoId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(vehiculoData)
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalVehiculo');
+                    cargarVehiculos();
+                    cargarCalendarioVehiculos();
+                }
+            } catch (error) { console.error(error); alert("Error al guardar el vehículo"); }
+        });
+
+        async function eliminarVehiculo(id) {
+            if (!confirm("¿Eliminar este vehículo y todo su historial?")) return;
+            try {
+                const res = await fetch(`/api/vehiculos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalDetalleVehiculo');
+                    cargarVehiculos();
+                    cargarCalendarioVehiculos();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function cargarVehiculos() {
+            try {
+                const res = await fetch('/api/vehiculos', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const vehiculos = await res.json();
+                window.currentVehiculos = vehiculos;
+                const contenedor = document.getElementById('lista-vehiculos');
+                contenedor.innerHTML = '';
+
+                if (vehiculos.length === 0) {
+                    contenedor.innerHTML = '<p style="color:#666;">No hay vehículos registrados.</p>';
+                    return;
+                }
+
+                vehiculos.forEach(v => {
+                    const div = document.createElement('div');
+                    div.className = 'vehiculo-item';
+                    div.onclick = () => abrirDetalleVehiculo(v._id);
+                    div.innerHTML = `<h5>${v.nombre}</h5><small>${v.patente || 'Sin patente'}</small>`;
+                    contenedor.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                document.getElementById('lista-vehiculos').innerHTML = '<p>Error al cargar vehículos.</p>';
+            }
+        }
+
+        // --- Detalle de vehículo: uso y mantenimiento ---
+        let vehiculoDetalleActualId = null;
+
+        async function abrirDetalleVehiculo(id) {
+            const v = window.currentVehiculos.find(x => x._id === id);
+            if (!v) return;
+            vehiculoDetalleActualId = id;
+            document.getElementById('tituloDetalleVehiculo').innerText = v.nombre + (v.patente ? ` (${v.patente})` : '');
+            document.getElementById('modalDetalleVehiculo').style.display = 'block';
+            await cargarRegistrosVehiculo(id);
+        }
+
+        async function cargarRegistrosVehiculo(vehiculoId) {
+            const cont = document.getElementById('listaRegistrosVehiculo');
+            cont.innerHTML = 'Cargando...';
+            try {
+                const res = await fetch(`/api/vehiculo-registros?vehiculo=${vehiculoId}`, { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
+                const registros = await res.json();
+                window.currentRegistrosVehiculo = registros;
+                cont.innerHTML = '';
+
+                if (registros.length === 0) {
+                    cont.innerHTML = '<p style="color:#666;">Sin uso ni mantenimientos registrados.</p>';
+                    return;
+                }
+
+                registros.slice().reverse().forEach(r => {
+                    const fechaFmt = new Date(r.fecha).toLocaleDateString();
+                    const div = document.createElement('div');
+                    div.className = 'registro-item';
+                    div.innerHTML = `
+                        <div>
+                            <span class="registro-tag ${r.tipo}">${r.tipo}</span>
+                            <p style="margin:4px 0 0 0; font-size:13px;"><strong>${fechaFmt}</strong> — ${r.detalle || '-'}</p>
+                        </div>
+                        <div class="evento-actions" style="margin-top:0;">
+                            <button class="btn-action-edit" onclick="prepararEdicionRegistro('${r._id}')">Editar</button>
+                            <button class="btn-action-delete" onclick="eliminarRegistro('${r._id}')">Eliminar</button>
+                        </div>
+                    `;
+                    cont.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                cont.innerHTML = '<p>Error al cargar el historial.</p>';
+            }
+        }
+
+        function eliminarVehiculoActual() {
+            if (vehiculoDetalleActualId) eliminarVehiculo(vehiculoDetalleActualId);
+        }
+
+        function prepararEdicionVehiculoDesdeDetalle() {
+            if (vehiculoDetalleActualId) prepararEdicionVehiculo(vehiculoDetalleActualId);
+        }
+
+        // --- Modal generico de Registro (uso / mantenimiento), reutilizado desde el detalle del vehiculo y desde el dia del calendario ---
+        let editRegistroId = null;
+        let registroDesdeCalendario = false;
+        let fechaCalendarioSeleccionada = null;
+
+        function poblarSelectVehiculos(seleccionadoId) {
+            const select = document.getElementById('vehiculoRegistro');
+            select.innerHTML = window.currentVehiculos.map(v =>
+                `<option value="${v._id}" ${v._id === seleccionadoId ? 'selected' : ''}>${v.nombre}</option>`
+            ).join('');
+        }
+
+        function abrirModalRegistro(tipo, desdeCalendario) {
+            editRegistroId = null;
+            registroDesdeCalendario = !!desdeCalendario;
+            document.getElementById('formRegistroVehiculo').reset();
+            document.getElementById('tipoRegistro').value = tipo;
+            document.getElementById('modalTitleRegistro').innerText = tipo === 'uso' ? 'Agregar Uso' : 'Agregar Mantenimiento';
+            document.getElementById('labelDetalleRegistro').innerText = tipo === 'uso' ? 'Persona (quién lo usa)' : 'Descripción del mantenimiento';
+            document.getElementById('btnSubmitRegistro').innerText = 'Guardar';
+
+            poblarSelectVehiculos(registroDesdeCalendario ? null : vehiculoDetalleActualId);
+            document.getElementById('grupoVehiculoRegistro').style.display = 'block';
+
+            if (registroDesdeCalendario && fechaCalendarioSeleccionada) {
+                document.getElementById('fechaRegistro').value = fechaCalendarioSeleccionada;
+            }
+
+            document.getElementById('modalRegistroVehiculo').style.display = 'block';
+        }
+
+        function prepararEdicionRegistro(id) {
+            let r = (window.currentRegistrosVehiculo || []).find(x => x._id === id);
+            if (!r) {
+                // Buscar tambien entre los usos cargados para el calendario
+                Object.values(window.usoPorDia || {}).forEach(lista => {
+                    const encontrado = lista.find(x => x._id === id);
+                    if (encontrado) r = encontrado;
+                });
+            }
+            if (!r) return;
+            editRegistroId = id;
+            registroDesdeCalendario = false;
+            document.getElementById('modalTitleRegistro').innerText = 'Editar Registro';
+            document.getElementById('btnSubmitRegistro').innerText = 'Actualizar';
+            document.getElementById('tipoRegistro').value = r.tipo;
+            document.getElementById('labelDetalleRegistro').innerText = r.tipo === 'uso' ? 'Persona (quién lo usa)' : 'Descripción del mantenimiento';
+            poblarSelectVehiculos(r.vehiculo && r.vehiculo._id);
+            document.getElementById('grupoVehiculoRegistro').style.display = 'block';
+            document.getElementById('fechaRegistro').value = new Date(r.fecha).toISOString().slice(0, 10);
+            document.getElementById('detalleRegistro').value = r.detalle || '';
+            document.getElementById('modalRegistroVehiculo').style.display = 'block';
+        }
+
+        document.getElementById('formRegistroVehiculo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const registroData = {
+                vehiculo: document.getElementById('vehiculoRegistro').value,
+                fecha: document.getElementById('fechaRegistro').value,
+                tipo: document.getElementById('tipoRegistro').value,
+                detalle: document.getElementById('detalleRegistro').value
+            };
+            try {
+                const url = editRegistroId ? `/api/vehiculo-registros/${editRegistroId}` : '/api/vehiculo-registros';
+                const method = editRegistroId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method: method,
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(registroData)
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalRegistroVehiculo');
+                    cargarCalendarioVehiculos();
+                    if (vehiculoDetalleActualId) cargarRegistrosVehiculo(vehiculoDetalleActualId);
+                    if (fechaCalendarioSeleccionada) cargarUsoDelDia(fechaCalendarioSeleccionada);
+                }
+            } catch (error) { console.error(error); alert("Error al guardar el registro"); }
+        });
+
+        async function eliminarRegistro(id) {
+            if (!confirm("¿Eliminar este registro?")) return;
+            try {
+                const res = await fetch(`/api/vehiculo-registros/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cargarCalendarioVehiculos();
+                    if (vehiculoDetalleActualId) cargarRegistrosVehiculo(vehiculoDetalleActualId);
+                    if (fechaCalendarioSeleccionada) cargarUsoDelDia(fechaCalendarioSeleccionada);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        // --- Calendario mensual de uso de vehiculos ---
+        let calendarioFecha = new Date();
+        window.usoPorDia = {}; // 'YYYY-MM-DD' -> [ {vehiculoNombre, detalle}, ... ]
+
+        function cambiarMesCalendario(delta) {
+            calendarioFecha.setMonth(calendarioFecha.getMonth() + delta);
+            cargarCalendarioVehiculos();
+        }
+
+        function formatoYMD(d) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        async function cargarCalendarioVehiculos() {
+            const anio = calendarioFecha.getFullYear();
+            const mes = calendarioFecha.getMonth(); // 0-indexado
+
+            const primerDiaMes = new Date(anio, mes, 1);
+            const ultimoDiaMes = new Date(anio, mes + 1, 0);
+
+            document.getElementById('calendarioTitulo').innerText =
+                primerDiaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+            // Cargar usos del mes desde el servidor
+            window.usoPorDia = {};
+            try {
+                const desde = formatoYMD(primerDiaMes);
+                const hasta = formatoYMD(ultimoDiaMes);
+                const res = await fetch(`/api/vehiculo-registros?tipo=uso&desde=${desde}&hasta=${hasta}`, { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    const registros = await res.json();
+                    registros.forEach(r => {
+                        const clave = formatoYMD(new Date(r.fecha));
+                        if (!window.usoPorDia[clave]) window.usoPorDia[clave] = [];
+                        window.usoPorDia[clave].push(r);
+                    });
+                }
+            } catch (error) { console.error(error); }
+
+            renderCalendarioGrid(anio, mes, primerDiaMes, ultimoDiaMes);
+        }
+
+        function renderCalendarioGrid(anio, mes, primerDiaMes, ultimoDiaMes) {
+            const grid = document.getElementById('calendarioGrid');
+            grid.innerHTML = '';
+
+            const nombresDias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            nombresDias.forEach(nd => {
+                const cab = document.createElement('div');
+                cab.className = 'calendario-header-dia';
+                cab.innerText = nd;
+                grid.appendChild(cab);
+            });
+
+            const diaSemanaInicio = primerDiaMes.getDay(); // 0=domingo
+            for (let i = 0; i < diaSemanaInicio; i++) {
+                const vacio = document.createElement('div');
+                vacio.className = 'calendario-dia calendario-dia-vacio';
+                grid.appendChild(vacio);
+            }
+
+            const hoyStr = formatoYMD(new Date());
+            for (let dia = 1; dia <= ultimoDiaMes.getDate(); dia++) {
+                const fechaDia = new Date(anio, mes, dia);
+                const clave = formatoYMD(fechaDia);
+                const usosDia = window.usoPorDia[clave] || [];
+
+                const celda = document.createElement('div');
+                celda.className = 'calendario-dia' + (clave === hoyStr ? ' hoy' : '');
+                celda.onclick = () => abrirDiaCalendario(clave);
+
+                let itemsHtml = usosDia.slice(0, 3).map(u =>
+                    `<div class="calendario-uso-item">${u.vehiculo ? u.vehiculo.nombre : '?'}: ${u.detalle || ''}</div>`
+                ).join('');
+                if (usosDia.length > 3) itemsHtml += `<div class="calendario-uso-item">+${usosDia.length - 3} más</div>`;
+
+                celda.innerHTML = `<span class="num-dia">${dia}</span>${itemsHtml}`;
+                grid.appendChild(celda);
+            }
+        }
+
+        function abrirDiaCalendario(fechaYMD) {
+            fechaCalendarioSeleccionada = fechaYMD;
+            const [y, m, d] = fechaYMD.split('-');
+            document.getElementById('tituloDiaVehiculo').innerText = `Uso del ${d}/${m}/${y}`;
+            document.getElementById('modalDiaVehiculo').style.display = 'block';
+            cargarUsoDelDia(fechaYMD);
+        }
+
+        function cargarUsoDelDia(fechaYMD) {
+            const cont = document.getElementById('listaUsoDia');
+            const usos = window.usoPorDia[fechaYMD] || [];
+            cont.innerHTML = '';
+
+            if (usos.length === 0) {
+                cont.innerHTML = '<p style="color:#666;">Ningún vehículo asignado este día.</p>';
+                return;
+            }
+
+            usos.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'registro-item';
+                div.innerHTML = `
+                    <div>
+                        <p style="margin:0; font-size:14px;"><strong>${u.vehiculo ? u.vehiculo.nombre : '?'}</strong></p>
+                        <p style="margin:2px 0 0 0; font-size:13px; color:#555;">Usado por: ${u.detalle || '-'}</p>
+                    </div>
+                    <div class="evento-actions" style="margin-top:0;">
+                        <button class="btn-action-edit" onclick="prepararEdicionRegistro('${u._id}')">Editar</button>
+                        <button class="btn-action-delete" onclick="eliminarRegistro('${u._id}')">Eliminar</button>
+                    </div>
+                `;
+                cont.appendChild(div);
+            });
         }
 
         // Iniciar la app: aplicar estado de sesion y cargar la cartelera
