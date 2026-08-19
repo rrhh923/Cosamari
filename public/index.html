@@ -40,6 +40,24 @@
             color: var(--blanco); 
             margin-right: 20px; 
         }
+
+        /* --- CANDADO / LOGIN --- */
+        .lock-btn {
+            font-size: 22px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--amarillo);
+            margin-right: 15px;
+            line-height: 1;
+        }
+        .lock-btn:hover { color: var(--blanco); }
+
+        /* Oculto por defecto: solo aparece si el body tiene la clase 'autenticado' */
+        .solo-autenticado { display: none !important; }
+        body.autenticado .solo-autenticado { display: initial; }
+        body.autenticado .panel-header .btn-agregar.solo-autenticado { display: inline-block; }
+        body.autenticado .evento-actions.solo-autenticado { display: flex; }
         
         .sidebar { 
             height: 100%; 
@@ -232,11 +250,13 @@
     <div id="miSidebar" class="sidebar">
         <button class="close-btn" onclick="cerrarMenu()">&times;</button>
         <a href="javascript:void(0)" onclick="cambiarVista('cartelera')">Inicio / Cartelera</a>
-        <a href="javascript:void(0)" onclick="cambiarVista('empleados')">Empleados</a>
-        <a href="#">Configuracion</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cambiarVista('empleados')">Empleados</a>
+        <a href="#" class="solo-autenticado">Configuracion</a>
+        <a href="javascript:void(0)" class="solo-autenticado" onclick="cerrarSesion()">Cerrar sesion</a>
     </div>
 
     <header>
+        <button id="btnLock" class="lock-btn" onclick="abrirModalLogin()" title="Ingresar contraseña">&#128274;</button>
         <button class="menu-btn" onclick="abrirMenu()">&#9776;</button>
         <h1 id="titulo-header">Panel de Control</h1>
     </header>
@@ -246,7 +266,7 @@
         <div id="vista-cartelera" class="panel-box">
             <div class="panel-header">
                 <h2>Cartelera</h2>
-                <button class="btn-agregar" onclick="abrirModalEvento()">Agregar evento</button>
+                <button class="btn-agregar solo-autenticado" onclick="abrirModalEvento()">Agregar evento</button>
             </div>
             <div class="seccion-contenido">
                 <h3>Eventos de Hoy</h3>
@@ -296,6 +316,21 @@
         </div>
     </div>
 
+    <div id="modalLogin" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal('modalLogin')">&times;</span>
+            <h2 style="margin-top: 0; color: var(--azul);">Ingresar Contraseña</h2>
+            <form id="formLogin">
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="passwordLogin" required autofocus>
+                </div>
+                <p id="loginError" style="color:#cc0000; font-weight:bold; display:none;">Contraseña incorrecta.</p>
+                <button type="submit" class="btn-submit">Entrar</button>
+            </form>
+        </div>
+    </div>
+
     <div id="modalEmpleado" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModal('modalEmpleado')">&times;</span>
@@ -316,6 +351,7 @@
         function cerrarMenu() { document.getElementById("miSidebar").style.width = "0"; }
 
         function cambiarVista(vista) {
+            if (vista === 'empleados' && !window.authToken) { abrirModalLogin(); return; }
             document.getElementById('vista-cartelera').style.display = 'none';
             document.getElementById('vista-empleados').style.display = 'none';
             
@@ -327,6 +363,81 @@
                 cargarEmpleados();
             }
             cerrarMenu();
+        }
+
+        // === AUTENTICACION POR CONTRASEÑA ===
+        window.authToken = sessionStorage.getItem('authToken') || null;
+
+        function aplicarEstadoAuth() {
+            const btnLock = document.getElementById('btnLock');
+            if (window.authToken) {
+                document.body.classList.add('autenticado');
+                btnLock.innerHTML = '&#128275;'; // candado abierto
+                btnLock.title = 'Sesion iniciada (click para cerrar sesion)';
+                btnLock.onclick = cerrarSesion;
+            } else {
+                document.body.classList.remove('autenticado');
+                btnLock.innerHTML = '&#128274;'; // candado cerrado
+                btnLock.title = 'Ingresar contraseña';
+                btnLock.onclick = abrirModalLogin;
+                // Si estabamos en la vista de empleados, volver a la cartelera
+                if (document.getElementById('vista-empleados').style.display !== 'none') {
+                    cambiarVista('cartelera');
+                }
+            }
+        }
+
+        function abrirModalLogin() {
+            document.getElementById('formLogin').reset();
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('modalLogin').style.display = 'block';
+        }
+
+        function cerrarSesion() {
+            window.authToken = null;
+            sessionStorage.removeItem('authToken');
+            aplicarEstadoAuth();
+            cerrarMenu();
+        }
+
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('passwordLogin').value;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    window.authToken = data.token;
+                    sessionStorage.setItem('authToken', data.token);
+                    aplicarEstadoAuth();
+                    cerrarModal('modalLogin');
+                } else {
+                    document.getElementById('loginError').style.display = 'block';
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loginError').style.display = 'block';
+            }
+        });
+
+        // Helper para incluir el token en las peticiones protegidas
+        function authHeaders(extra) {
+            const headers = Object.assign({}, extra || {});
+            if (window.authToken) headers['x-auth-token'] = window.authToken;
+            return headers;
+        }
+
+        // Si el servidor responde 401, la sesion ya no es valida: cerrarla
+        function manejarRespuestaAuth(res) {
+            if (res.status === 401) {
+                cerrarSesion();
+                abrirModalLogin();
+            }
+            return res;
         }
 
         // --- CONTROL DE MODALES ---
@@ -387,9 +498,10 @@
 
                 const res = await fetch(url, {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify(eventoData)
                 });
+                manejarRespuestaAuth(res);
                 if (res.ok) {
                     cerrarModal('modalEvento');
                     cargarEventos(); 
@@ -400,7 +512,8 @@
         async function eliminarEvento(id) {
             if (!confirm("¿Eliminar este evento?")) return;
             try {
-                const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/events/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
                 if (res.ok) cargarEventos();
             } catch (error) { console.error(error); }
         }
@@ -428,7 +541,7 @@
                     
                     const div = document.createElement('div');
                     div.className = 'evento-card';
-                    const actionsHtml = `<div class="evento-actions">
+                    const actionsHtml = `<div class="evento-actions solo-autenticado">
                             <button class="btn-action-edit" onclick="prepararEdicionEvento('${ev._id}')">Editar</button>
                             <button class="btn-action-delete" onclick="eliminarEvento('${ev._id}')">Eliminar</button>
                         </div>`;
@@ -460,9 +573,10 @@
             try {
                 const res = await fetch('/api/employees', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify(empleadoData)
                 });
+                manejarRespuestaAuth(res);
                 if (res.ok) {
                     cerrarModal('modalEmpleado');
                     cargarEmpleados();
@@ -477,7 +591,9 @@
 
         async function cargarEmpleados() {
             try {
-                const res = await fetch('/api/employees');
+                const res = await fetch('/api/employees', { headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (!res.ok) return;
                 const empleados = await res.json();
                 const contenedor = document.getElementById('lista-empleados');
                 contenedor.innerHTML = '';
@@ -514,7 +630,8 @@
             }
         }
 
-        // Iniciar la app cargando la cartelera
+        // Iniciar la app: aplicar estado de sesion y cargar la cartelera
+        aplicarEstadoAuth();
         cargarEventos();
     </script>
 </body>

@@ -3,20 +3,38 @@ const express = require('express');
 const mongoose = require('mongoose');
 const path = require('path');
 const cors = require('cors');
-
+const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// ==========================================
 // 1. MIDDLEWARES
-// ==========================================
 app.use(cors()); 
 app.use(express.json()); 
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-// ==========================================
+// --- AUTENTICACION SIMPLE POR CONTRASEÑA ---
+if (!process.env.ADMIN_PASSWORD) {
+    console.warn('ADVERTENCIA: ADMIN_PASSWORD no esta configurada en .env. Nadie podra desbloquear el panel.');
+}
+
+// Tokens de sesion validos, en memoria (se invalidan al reiniciar el servidor)
+const sesionesValidas = new Set();
+
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+    if (password && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD) {
+        const token = crypto.randomBytes(24).toString('hex');
+        sesionesValidas.add(token);
+        return res.status(200).json({ token });
+    }
+    return res.status(401).json({ error: 'Contraseña incorrecta.' });
+});
+
+function requireAuth(req, res, next) {
+    const token = req.headers['x-auth-token'];
+    if (token && sesionesValidas.has(token)) return next();
+    return res.status(401).json({ error: 'No autorizado. Ingresa la contraseña.' });
+}
 // 2. CONEXION A LA BASE DE DATOS
-// ==========================================
 if (!process.env.MONGO_URI) {
     console.error('ERROR FATAL: La variable de entorno MONGO_URI no esta configurada.');
     process.exit(1); 
@@ -29,11 +47,7 @@ mongoose.connect(process.env.MONGO_URI)
         console.error('Error critico de conexion a MongoDB:', err);
         process.exit(1); 
     });
-
-// ==========================================
 // 3. MODELOS DE DATOS
-// ==========================================
-
 // Modelo de Eventos
 const eventSchema = new mongoose.Schema({
     title: { type: String, required: [true, 'El titulo del evento es obligatorio'], trim: true },
@@ -50,11 +64,7 @@ const employeeSchema = new mongoose.Schema({
 }, { timestamps: true }); // timestamps guarda automaticamente la fecha de creacion
 
 const Employee = mongoose.model('Employee', employeeSchema);
-
-// ==========================================
 // 4. RUTAS DE LA API
-// ==========================================
-
 // --- RUTAS DE EVENTOS ---
 app.get('/api/events', async (req, res) => {
     try {
@@ -65,7 +75,7 @@ app.get('/api/events', async (req, res) => {
     }
 });
 
-app.post('/api/events', async (req, res) => {
+app.post('/api/events', requireAuth, async (req, res) => {
     try {
         const { title, date } = req.body;
         if (!title || !date) return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
@@ -78,7 +88,7 @@ app.post('/api/events', async (req, res) => {
     }
 });
 
-app.put('/api/events/:id', async (req, res) => {
+app.put('/api/events/:id', requireAuth, async (req, res) => {
     try {
         const updatedEvent = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updatedEvent) return res.status(404).json({ error: 'El evento no existe.' });
@@ -88,7 +98,7 @@ app.put('/api/events/:id', async (req, res) => {
     }
 });
 
-app.delete('/api/events/:id', async (req, res) => {
+app.delete('/api/events/:id', requireAuth, async (req, res) => {
     try {
         const deletedEvent = await Event.findByIdAndDelete(req.params.id);
         if (!deletedEvent) return res.status(404).json({ error: 'El evento no existe.' });
@@ -99,7 +109,7 @@ app.delete('/api/events/:id', async (req, res) => {
 });
 
 // --- RUTAS DE EMPLEADOS ---
-app.get('/api/employees', async (req, res) => {
+app.get('/api/employees', requireAuth, async (req, res) => {
     try {
         const employees = await Employee.find().sort({ createdAt: -1 }); // Los mas nuevos primero
         res.status(200).json(employees);
@@ -108,7 +118,7 @@ app.get('/api/employees', async (req, res) => {
     }
 });
 
-app.post('/api/employees', async (req, res) => {
+app.post('/api/employees', requireAuth, async (req, res) => {
     try {
         const { nombre } = req.body;
         if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio.' });
@@ -129,10 +139,7 @@ app.use('/api/*', (req, res) => {
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-// ==========================================
 // 5. INICIAR SERVIDOR
-// ==========================================
 app.listen(PORT, () => {
     console.log(`Servidor ejecutandose correctamente en el puerto ${PORT}`);
 });
