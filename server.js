@@ -6,17 +6,17 @@ const cors = require('cors');
 const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
+
 // 1. MIDDLEWARES
-app.use(cors()); 
-app.use(express.json()); 
-app.use(express.static(path.join(__dirname, 'public'))); 
+app.use(cors());
+app.use(express.json());
+app.use(express.static(__dirname));  // <--- Cambio: sirve desde la raíz
 
 // --- AUTENTICACION SIMPLE POR CONTRASEÑA ---
 if (!process.env.ADMIN_PASSWORD) {
     console.warn('ADVERTENCIA: ADMIN_PASSWORD no esta configurada en .env. Nadie podra desbloquear el panel.');
 }
 
-// Tokens de sesion validos, en memoria (se invalidan al reiniciar el servidor)
 const sesionesValidas = new Set();
 
 app.post('/api/login', (req, res) => {
@@ -34,31 +34,30 @@ function requireAuth(req, res, next) {
     if (token && sesionesValidas.has(token)) return next();
     return res.status(401).json({ error: 'No autorizado. Ingresa la contraseña.' });
 }
+
 // 2. CONEXION A LA BASE DE DATOS
 if (!process.env.MONGO_URI) {
     console.error('ERROR FATAL: La variable de entorno MONGO_URI no esta configurada.');
-    process.exit(1); 
+    process.exit(1);
 }
 
-mongoose.set('strictQuery', false); 
+mongoose.set('strictQuery', false);
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Conectado exitosamente a MongoDB'))
     .catch(err => {
         console.error('Error critico de conexion a MongoDB:', err);
-        process.exit(1); 
+        process.exit(1);
     });
-// 3. MODELOS DE DATOS
-// Modelo de Eventos
+
+// 3. MODELOS DE DATOS (sin cambios)
 const eventSchema = new mongoose.Schema({
     title: { type: String, required: [true, 'El titulo del evento es obligatorio'], trim: true },
     date: { type: Date, required: [true, 'La fecha de inicio es obligatoria'] },
     duration: { type: String, default: '' },
     allDay: { type: Boolean, default: false }
-}, { timestamps: true }); 
-
+}, { timestamps: true });
 const Event = mongoose.model('Event', eventSchema);
 
-// Modelo de Legajos (fichas de personal)
 const legajoSchema = new mongoose.Schema({
     persona: { type: String, required: [true, 'El nombre de la persona es obligatorio'], trim: true },
     dni: { type: String, default: '', trim: true },
@@ -73,71 +72,54 @@ const legajoSchema = new mongoose.Schema({
     gmail: { type: String, default: '', trim: true },
     fechaNacimiento: { type: Date, default: null },
     fechaIngreso: { type: Date, default: null }
-}, { timestamps: true }); // timestamps guarda automaticamente la fecha de creacion
-
+}, { timestamps: true });
 const Legajo = mongoose.model('Legajo', legajoSchema);
 
-// Modelo de EPP (Elementos de Proteccion Personal)
-// La imagen se agregara mas adelante; por ahora solo nombre y fecha.
 const eppSchema = new mongoose.Schema({
     nombre: { type: String, required: [true, 'El nombre es obligatorio'], trim: true },
     fecha: { type: Date, required: [true, 'La fecha es obligatoria'] }
 }, { timestamps: true });
-
 const Epp = mongoose.model('Epp', eppSchema);
 
-// Modelo de Vehiculos
 const vehiculoSchema = new mongoose.Schema({
     nombre: { type: String, required: [true, 'El nombre del vehiculo es obligatorio'], trim: true },
     patente: { type: String, default: '', trim: true }
 }, { timestamps: true });
-
 const Vehiculo = mongoose.model('Vehiculo', vehiculoSchema);
 
-// Modelo de Registros de Vehiculo: uso (calendario) y mantenimiento
 const vehiculoRegistroSchema = new mongoose.Schema({
     vehiculo: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehiculo', required: true },
     fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
     tipo: { type: String, enum: ['uso', 'mantenimiento'], required: true },
-    // Para "uso" guarda quien lo usa; para "mantenimiento" guarda la descripcion.
     detalle: { type: String, default: '', trim: true }
 }, { timestamps: true });
-
 const VehiculoRegistro = mongoose.model('VehiculoRegistro', vehiculoRegistroSchema);
 
-// Modelo de Notas del Diario (una por dia)
 const diarioNotaSchema = new mongoose.Schema({
     fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
     texto: { type: String, default: '' }
 }, { timestamps: true });
-
 const DiarioNota = mongoose.model('DiarioNota', diarioNotaSchema);
 
-// Modelo de la Nota General del Diario (documento unico)
 const diarioGeneralSchema = new mongoose.Schema({
     texto: { type: String, default: '' }
 }, { timestamps: true });
-
 const DiarioGeneral = mongoose.model('DiarioGeneral', diarioGeneralSchema);
 
-// Modelo de Grupos de Asistencia (listas reutilizables de personas)
 const asistenciaGrupoSchema = new mongoose.Schema({
     nombre: { type: String, required: [true, 'El nombre del grupo es obligatorio'], trim: true },
     personas: { type: [String], default: [] }
 }, { timestamps: true });
-
 const AsistenciaGrupo = mongoose.model('AsistenciaGrupo', asistenciaGrupoSchema);
 
-// Modelo de Registros de Asistencia (una persona, un dia, un estado)
 const asistenciaRegistroSchema = new mongoose.Schema({
     fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
     persona: { type: String, required: [true, 'La persona es obligatoria'], trim: true },
     estado: { type: String, enum: ['presente', 'ausente', 'tarde'], default: 'presente' }
 }, { timestamps: true });
-
 const AsistenciaRegistro = mongoose.model('AsistenciaRegistro', asistenciaRegistroSchema);
-// 4. RUTAS DE LA API
-// --- RUTAS DE EVENTOS ---
+
+// 4. RUTAS DE LA API (sin cambios)
 app.get('/api/events', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
@@ -151,10 +133,9 @@ app.post('/api/events', requireAuth, async (req, res) => {
     try {
         const { title, date } = req.body;
         if (!title || !date) return res.status(400).json({ error: 'El titulo y la fecha son campos obligatorios.' });
-        
         const newEvent = new Event(req.body);
         const savedEvent = await newEvent.save();
-        res.status(201).json(savedEvent); 
+        res.status(201).json(savedEvent);
     } catch (error) {
         res.status(500).json({ error: 'Hubo un problema interno al guardar el evento.' });
     }
@@ -180,9 +161,6 @@ app.delete('/api/events/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE LEGAJOS (fichas de personal) ---
-
-// Convierte valores vacios ('') a null para que Mongoose no falle al castear numeros/fechas
 function normalizarLegajo(body) {
     const datos = { ...body };
     if (datos.edad === '' || datos.edad === undefined) datos.edad = null;
@@ -193,20 +171,18 @@ function normalizarLegajo(body) {
 
 app.get('/api/legajos', requireAuth, async (req, res) => {
     try {
-        const legajos = await Legajo.find().sort({ createdAt: -1 }); // Los mas nuevos primero
+        const legajos = await Legajo.find().sort({ createdAt: -1 });
         res.status(200).json(legajos);
     } catch (error) {
         res.status(500).json({ error: 'Hubo un problema al obtener los legajos.' });
     }
 });
 
-// Cumpleaños dentro de los proximos 7 dias (para mostrar en la Cartelera)
 app.get('/api/legajos/cumpleanos', requireAuth, async (req, res) => {
     try {
         const legajos = await Legajo.find({ fechaNacimiento: { $ne: null } });
         const hoy = new Date();
         const hoyUTC = Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-
         const proximos = legajos
             .map(l => {
                 const fn = new Date(l.fechaNacimiento);
@@ -219,7 +195,6 @@ app.get('/api/legajos/cumpleanos', requireAuth, async (req, res) => {
             })
             .filter(item => item.diasFaltantes >= 0 && item.diasFaltantes <= 7)
             .sort((a, b) => a.diasFaltantes - b.diasFaltantes);
-
         res.status(200).json(proximos);
     } catch (error) {
         res.status(500).json({ error: 'Hubo un problema al obtener los cumpleaños.' });
@@ -230,7 +205,6 @@ app.post('/api/legajos', requireAuth, async (req, res) => {
     try {
         const { persona } = req.body;
         if (!persona) return res.status(400).json({ error: 'El nombre de la persona es obligatorio.' });
-
         const newLegajo = new Legajo(normalizarLegajo(req.body));
         const savedLegajo = await newLegajo.save();
         res.status(201).json(savedLegajo);
@@ -259,7 +233,6 @@ app.delete('/api/legajos/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE EPP ---
 app.get('/api/epp', requireAuth, async (req, res) => {
     try {
         const items = await Epp.find().sort({ fecha: -1 });
@@ -273,7 +246,6 @@ app.post('/api/epp', requireAuth, async (req, res) => {
     try {
         const { nombre, fecha } = req.body;
         if (!nombre || !fecha) return res.status(400).json({ error: 'El nombre y la fecha son obligatorios.' });
-
         const newItem = new Epp(req.body);
         const savedItem = await newItem.save();
         res.status(201).json(savedItem);
@@ -302,7 +274,6 @@ app.delete('/api/epp/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE VEHICULOS ---
 app.get('/api/vehiculos', requireAuth, async (req, res) => {
     try {
         const vehiculos = await Vehiculo.find().sort({ nombre: 1 });
@@ -316,7 +287,6 @@ app.post('/api/vehiculos', requireAuth, async (req, res) => {
     try {
         const { nombre } = req.body;
         if (!nombre) return res.status(400).json({ error: 'El nombre del vehiculo es obligatorio.' });
-
         const newVehiculo = new Vehiculo(req.body);
         const savedVehiculo = await newVehiculo.save();
         res.status(201).json(savedVehiculo);
@@ -339,7 +309,6 @@ app.delete('/api/vehiculos/:id', requireAuth, async (req, res) => {
     try {
         const deletedVehiculo = await Vehiculo.findByIdAndDelete(req.params.id);
         if (!deletedVehiculo) return res.status(404).json({ error: 'El vehiculo no existe.' });
-        // Borra tambien todos sus registros de uso/mantenimiento asociados
         await VehiculoRegistro.deleteMany({ vehiculo: req.params.id });
         res.status(200).json({ message: 'Vehiculo eliminado.' });
     } catch (error) {
@@ -347,8 +316,6 @@ app.delete('/api/vehiculos/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE REGISTROS DE VEHICULO (uso y mantenimiento) ---
-// Soporta filtros opcionales por query string: ?vehiculo=ID  y/o  ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD  y/o  ?tipo=uso|mantenimiento
 app.get('/api/vehiculo-registros', requireAuth, async (req, res) => {
     try {
         const filtro = {};
@@ -370,7 +337,6 @@ app.post('/api/vehiculo-registros', requireAuth, async (req, res) => {
     try {
         const { vehiculo, fecha, tipo } = req.body;
         if (!vehiculo || !fecha || !tipo) return res.status(400).json({ error: 'Vehiculo, fecha y tipo son obligatorios.' });
-
         const nuevo = new VehiculoRegistro(req.body);
         const guardado = await nuevo.save();
         const populado = await guardado.populate('vehiculo', 'nombre patente');
@@ -400,8 +366,6 @@ app.delete('/api/vehiculo-registros/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE DIARIO ---
-// Notas por dia, para el calendario. Soporta ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
 app.get('/api/diario-notas', requireAuth, async (req, res) => {
     try {
         const filtro = {};
@@ -417,7 +381,6 @@ app.get('/api/diario-notas', requireAuth, async (req, res) => {
     }
 });
 
-// Crea o actualiza (upsert) la nota de un dia especifico
 app.put('/api/diario-notas', requireAuth, async (req, res) => {
     try {
         const { fecha, texto } = req.body;
@@ -433,7 +396,6 @@ app.put('/api/diario-notas', requireAuth, async (req, res) => {
     }
 });
 
-// Nota general (un unico documento para todo el panel)
 app.get('/api/diario-general', requireAuth, async (req, res) => {
     try {
         const general = await DiarioGeneral.findOne();
@@ -453,7 +415,6 @@ app.put('/api/diario-general', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE GRUPOS DE ASISTENCIA ---
 app.get('/api/asistencia-grupos', requireAuth, async (req, res) => {
     try {
         const grupos = await AsistenciaGrupo.find().sort({ nombre: 1 });
@@ -495,8 +456,6 @@ app.delete('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
     }
 });
 
-// --- RUTAS DE REGISTROS DE ASISTENCIA ---
-// Soporta: ?fecha=YYYY-MM-DD (un solo dia)  o  ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD (rango, para el calendario)
 app.get('/api/asistencias', requireAuth, async (req, res) => {
     try {
         const filtro = {};
@@ -517,7 +476,6 @@ app.get('/api/asistencias', requireAuth, async (req, res) => {
     }
 });
 
-// Agrega (o actualiza el estado de) una persona en un dia
 app.post('/api/asistencias', requireAuth, async (req, res) => {
     try {
         const { fecha, persona, estado } = req.body;
@@ -553,16 +511,12 @@ app.delete('/api/asistencias/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Agrega un grupo completo a un dia: crea un registro individual por cada persona del grupo
-// (si esa persona ya tenia un registro ese dia, no lo pisa)
 app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
     try {
         const { fecha, grupoId } = req.body;
         if (!fecha || !grupoId) return res.status(400).json({ error: 'La fecha y el grupo son obligatorios.' });
-
         const grupo = await AsistenciaGrupo.findById(grupoId);
         if (!grupo) return res.status(404).json({ error: 'El grupo no existe.' });
-
         const fechaDate = new Date(fecha);
         const operaciones = grupo.personas.map(persona => ({
             updateOne: {
@@ -572,7 +526,6 @@ app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
             }
         }));
         if (operaciones.length > 0) await AsistenciaRegistro.bulkWrite(operaciones);
-
         const registrosDelDia = await AsistenciaRegistro.find({ fecha: fechaDate }).sort({ persona: 1 });
         res.status(200).json(registrosDelDia);
     } catch (error) {
@@ -580,7 +533,6 @@ app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
     }
 });
 
-// "Tick general": marca a todos los registrados de un dia con el mismo estado (por defecto, presente)
 app.post('/api/asistencias/marcar-todos', requireAuth, async (req, res) => {
     try {
         const { fecha, estado } = req.body;
@@ -594,14 +546,15 @@ app.post('/api/asistencias/marcar-todos', requireAuth, async (req, res) => {
     }
 });
 
-
 app.use('/api/*', (req, res) => {
     res.status(404).json({ error: 'El endpoint de la API no existe.' });
 });
 
+// Ruta por defecto: envía index.html desde el mismo directorio
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'index.html'));  // <--- Cambio
 });
+
 // 5. INICIAR SERVIDOR
 app.listen(PORT, () => {
     console.log(`Servidor ejecutandose correctamente en el puerto ${PORT}`);

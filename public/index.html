@@ -667,6 +667,7 @@
                         <option value="senior">Senior</option>
                         <option value="supervisor">Supervisor</option>
                         <option value="gerente">Gerente</option>
+                        <option value="pasante">Pasante</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -696,6 +697,10 @@
                 <div class="form-group">
                     <label>Fecha de Ingreso</label>
                     <input type="date" id="fechaIngresoLegajo">
+                </div>
+                <div class="form-group">
+                    <label>Permisos de trabajo</label>
+                    <input type="text" id="permisosTrabajoLegajo" placeholder="Ej. Permiso de ingreso, manejo, trabajo en altura">
                 </div>
                 <div class="form-group">
                     <label>Certificado</label>
@@ -1126,6 +1131,7 @@
             document.getElementById('fechaIngresoLegajo').value = leg.fechaIngreso ? new Date(leg.fechaIngreso).toISOString().slice(0, 10) : '';
             document.getElementById('certificadoLegajo').value = leg.certificado || '';
             document.getElementById('carnetLegajo').value = leg.carnet || '';
+            document.getElementById('permisosTrabajoLegajo').value = leg.permisosTrabajo || '';
             document.getElementById('antecedentesLegajo').value = leg.antecedentes || '';
             document.getElementById('modalLegajo').style.display = "block";
         }
@@ -1146,6 +1152,7 @@
                 fechaIngreso: document.getElementById('fechaIngresoLegajo').value || null,
                 certificado: document.getElementById('certificadoLegajo').value,
                 carnet: document.getElementById('carnetLegajo').value,
+                permisosTrabajo: document.getElementById('permisosTrabajoLegajo').value,
                 antecedentes: document.getElementById('antecedentesLegajo').value
             };
 
@@ -1186,7 +1193,7 @@
             return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
         }
 
-        const ETIQUETAS_EXPERIENCIA = { junior: 'Junior', 'semi junior': 'Semi Junior', senior: 'Senior', supervisor: 'Supervisor', gerente: 'Gerente' };
+        const ETIQUETAS_EXPERIENCIA = { junior: 'Junior', 'semi junior': 'Semi Junior', senior: 'Senior', supervisor: 'Supervisor', gerente: 'Gerente', pasante: 'Pasante' };
 
         async function cargarLegajos() {
             try {
@@ -1226,6 +1233,7 @@
                                 ${dato('Gmail', leg.gmail)}
                                 ${dato('Fecha Nacimiento', fechaCorta(leg.fechaNacimiento))}
                                 ${dato('Fecha Ingreso', fechaCorta(leg.fechaIngreso))}
+                                ${dato('Permisos de trabajo', leg.permisosTrabajo)}
                                 ${dato('Certificado', leg.certificado)}
                                 ${dato('Carnet', leg.carnet)}
                                 ${dato('Antecedentes', leg.antecedentes)}
@@ -1352,6 +1360,7 @@
         function prepararEdicionVehiculo(id) {
             const v = window.currentVehiculos.find(x => x._id === id);
             if (!v) return;
+            cerrarModal('modalDetalleVehiculo');
             editVehiculoId = id;
             document.getElementById('modalTitleVehiculo').innerText = 'Editar Vehículo';
             document.getElementById('btnSubmitVehiculo').innerText = 'Actualizar Vehículo';
@@ -1453,7 +1462,7 @@
                 }
 
                 registros.slice().reverse().forEach(r => {
-                    const fechaFmt = new Date(r.fecha).toLocaleDateString();
+                    const fechaFmt = fechaRegistroTexto(r.fecha);
                     const div = document.createElement('div');
                     div.className = 'registro-item';
                     div.innerHTML = `
@@ -1591,6 +1600,21 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
+        // Las fechas guardadas en MongoDB representan un día de calendario.
+        // Usamos UTC para evitar que Argentina las muestre como el día anterior.
+        function formatoYMDUTC(d) {
+            const yyyy = d.getUTCFullYear();
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function fechaRegistroTexto(fecha) {
+            if (!fecha) return '-';
+            const [yyyy, mm, dd] = formatoYMDUTC(new Date(fecha)).split('-');
+            return `${dd}/${mm}/${yyyy}`;
+        }
+
         async function cargarCalendarioVehiculos() {
             const anio = calendarioFecha.getFullYear();
             const mes = calendarioFecha.getMonth(); // 0-indexado
@@ -1611,7 +1635,7 @@
                 if (res.ok) {
                     const registros = await res.json();
                     registros.forEach(r => {
-                        const clave = formatoYMD(new Date(r.fecha));
+                        const clave = formatoYMDUTC(new Date(r.fecha));
                         if (!window.usoPorDia[clave]) window.usoPorDia[clave] = [];
                         window.usoPorDia[clave].push(r);
                     });
@@ -1722,7 +1746,7 @@
                 manejarRespuestaAuth(res);
                 if (res.ok) {
                     const notas = await res.json();
-                    notas.forEach(n => { window.notasPorDia[formatoYMD(new Date(n.fecha))] = n; });
+                    notas.forEach(n => { window.notasPorDia[formatoYMDUTC(new Date(n.fecha))] = n; });
                 }
             } catch (error) { console.error(error); }
 
@@ -1805,7 +1829,13 @@
                     body: JSON.stringify({ texto })
                 });
                 manejarRespuestaAuth(res);
-                if (!res.ok) alert('Error al guardar');
+                if (!res.ok) {
+                    alert('Error al guardar las notas generales');
+                } else {
+                    const data = await res.json();
+                    document.getElementById('textoDiarioGeneral').value = data.texto || texto;
+                    alert('Notas generales guardadas correctamente');
+                }
             } catch (error) { console.error(error); alert('Error al guardar'); }
         }
 
@@ -1849,7 +1879,7 @@
                 if (res.ok) {
                     const registros = await res.json();
                     registros.forEach(r => {
-                        const clave = formatoYMD(new Date(r.fecha));
+                        const clave = formatoYMDUTC(new Date(r.fecha));
                         if (!window.asistenciasPorDia[clave]) window.asistenciasPorDia[clave] = [];
                         window.asistenciasPorDia[clave].push(r);
                     });
