@@ -1491,7 +1491,7 @@
             if (vehiculoDetalleActualId) prepararEdicionVehiculo(vehiculoDetalleActualId);
         }
 
-        // --- Modal generico de Registro (uso / mantenimiento), reutilizado desde el detalle del vehiculo y desde el dia del calendario ---
+        // --- Modal generico de Registro (uso / mantenimiento) ---
         let editRegistroId = null;
         let registroDesdeCalendario = false;
         let fechaCalendarioSeleccionada = null;
@@ -1525,7 +1525,6 @@
         function prepararEdicionRegistro(id) {
             let r = (window.currentRegistrosVehiculo || []).find(x => x._id === id);
             if (!r) {
-                // Buscar tambien entre los usos cargados para el calendario
                 Object.values(window.usoPorDia || {}).forEach(lista => {
                     const encontrado = lista.find(x => x._id === id);
                     if (encontrado) r = encontrado;
@@ -1586,7 +1585,7 @@
 
         // --- Calendario mensual de uso de vehiculos ---
         let calendarioFecha = new Date();
-        window.usoPorDia = {}; // 'YYYY-MM-DD' -> [ {vehiculoNombre, detalle}, ... ]
+        window.usoPorDia = {}; 
 
         function cambiarMesCalendario(delta) {
             calendarioFecha.setMonth(calendarioFecha.getMonth() + delta);
@@ -1600,8 +1599,6 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        // Las fechas guardadas en MongoDB representan un día de calendario.
-        // Usamos UTC para evitar que Argentina las muestre como el día anterior.
         function formatoYMDUTC(d) {
             const yyyy = d.getUTCFullYear();
             const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -1617,7 +1614,7 @@
 
         async function cargarCalendarioVehiculos() {
             const anio = calendarioFecha.getFullYear();
-            const mes = calendarioFecha.getMonth(); // 0-indexado
+            const mes = calendarioFecha.getMonth(); 
 
             const primerDiaMes = new Date(anio, mes, 1);
             const ultimoDiaMes = new Date(anio, mes + 1, 0);
@@ -1625,7 +1622,6 @@
             document.getElementById('calendarioTitulo').innerText =
                 primerDiaMes.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
-            // Cargar usos del mes desde el servidor
             window.usoPorDia = {};
             try {
                 const desde = formatoYMD(primerDiaMes);
@@ -1657,7 +1653,7 @@
                 grid.appendChild(cab);
             });
 
-            const diaSemanaInicio = primerDiaMes.getDay(); // 0=domingo
+            const diaSemanaInicio = primerDiaMes.getDay(); 
             for (let i = 0; i < diaSemanaInicio; i++) {
                 const vacio = document.createElement('div');
                 vacio.className = 'calendario-dia calendario-dia-vacio';
@@ -2049,84 +2045,21 @@
                 manejarRespuestaAuth(res);
                 if (res.ok) {
                     await cargarCalendarioAsistencias();
-                    renderListaAsistenciaDia();
+                    abrirDiaAsistencia(fechaDiaAsistenciaSeleccionada);
                 }
             } catch (error) { console.error(error); }
         }
 
-        // --- Grupos de asistencia ---
-        let editGrupoId = null;
-
-        function abrirModalGrupo() {
-            editGrupoId = null;
-            document.getElementById('modalTitleGrupo').innerText = 'Crear Grupo';
-            document.getElementById('btnSubmitGrupo').innerText = 'Guardar Grupo';
-            document.getElementById('formGrupo').reset();
-            renderCheckboxPersonasGrupo([]);
-            document.getElementById('modalGrupo').style.display = 'block';
-        }
-
-        function renderCheckboxPersonasGrupo(seleccionadas) {
-            const cont = document.getElementById('checkboxPersonasGrupo');
-            if (window.legajoPersonasCache.length === 0) {
-                cont.innerHTML = '<p style="color:#666; margin:0;">No hay personas cargadas en Legajo todavía.</p>';
-                return;
-            }
-            cont.innerHTML = window.legajoPersonasCache.map(p => `
-                <label style="display:block; font-weight:normal; margin-bottom:6px; cursor:pointer;">
-                    <input type="checkbox" value="${p}" ${seleccionadas.includes(p) ? 'checked' : ''}> ${p}
-                </label>
-            `).join('');
-        }
-
-        function prepararEdicionGrupo(id) {
-            const g = window.currentGrupos.find(x => x._id === id);
-            if (!g) return;
-            editGrupoId = id;
-            document.getElementById('modalTitleGrupo').innerText = 'Editar Grupo';
-            document.getElementById('btnSubmitGrupo').innerText = 'Actualizar Grupo';
-            document.getElementById('nombreGrupo').value = g.nombre;
-            renderCheckboxPersonasGrupo(g.personas || []);
-            document.getElementById('modalGrupo').style.display = 'block';
-        }
-
-        document.getElementById('formGrupo').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const personasSeleccionadas = Array.from(
-                document.querySelectorAll('#checkboxPersonasGrupo input[type=checkbox]:checked')
-            ).map(c => c.value);
-            const grupoData = {
-                nombre: document.getElementById('nombreGrupo').value,
-                personas: personasSeleccionadas
-            };
-            try {
-                const url = editGrupoId ? `/api/asistencia-grupos/${editGrupoId}` : '/api/asistencia-grupos';
-                const method = editGrupoId ? 'PUT' : 'POST';
-                const res = await fetch(url, {
-                    method,
-                    headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify(grupoData)
-                });
-                manejarRespuestaAuth(res);
-                if (res.ok) {
-                    cerrarModal('modalGrupo');
-                    cargarGrupos();
-                }
-            } catch (error) { console.error(error); alert('Error al guardar el grupo'); }
-        });
-
-        async function eliminarGrupo(id) {
-            if (!confirm('¿Eliminar este grupo?')) return;
-            try {
-                const res = await fetch(`/api/asistencia-grupos/${id}`, { method: 'DELETE', headers: authHeaders() });
-                manejarRespuestaAuth(res);
-                if (res.ok) cargarGrupos();
-            } catch (error) { console.error(error); }
+        // === GESTIÓN DE GRUPOS E INICIALIZACIÓN DE ASISTENCIAS ===
+        async function iniciarAsistencias() {
+            await cargarPersonasLegajo();
+            await cargarGrupos();
+            await cargarCalendarioAsistencias();
         }
 
         async function cargarGrupos() {
             try {
-                const res = await fetch('/api/asistencia-grupos', { headers: authHeaders() });
+                const res = await fetch('/api/grupos', { headers: authHeaders() });
                 manejarRespuestaAuth(res);
                 if (!res.ok) return;
                 const grupos = await res.json();
@@ -2142,34 +2075,73 @@
                 grupos.forEach(g => {
                     const div = document.createElement('div');
                     div.className = 'vehiculo-item';
-                    div.style.cursor = 'default';
                     div.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                            <h5 style="margin:0;">${g.nombre}</h5>
-                            <div class="evento-actions" style="margin-top:0;">
-                                <button class="btn-action-edit" onclick="prepararEdicionGrupo('${g._id}')">Editar</button>
-                                <button class="btn-action-delete" onclick="eliminarGrupo('${g._id}')">Eliminar</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <h5>${g.nombre}</h5>
+                                <small>${g.personas ? g.personas.join(', ') : 'Sin integrantes'}</small>
                             </div>
+                            <button class="btn-action-delete" style="padding:3px 8px; font-size:11px;" onclick="eliminarGrupo('${g._id}')">Eliminar</button>
                         </div>
-                        <small>${g.personas.length} persona(s)${g.personas.length ? ': ' + g.personas.join(', ') : ''}</small>
                     `;
                     cont.appendChild(div);
                 });
             } catch (error) {
                 console.error(error);
-                document.getElementById('lista-grupos').innerHTML = '<p>Error al cargar los grupos.</p>';
+                document.getElementById('lista-grupos').innerHTML = '<p>Error al cargar grupos.</p>';
             }
         }
 
-        async function iniciarAsistencias() {
-            await cargarPersonasLegajo();
-            await cargarGrupos();
-            await cargarCalendarioAsistencias();
+        function abrirModalGrupo() {
+            document.getElementById('formGrupo').reset();
+            const cont = document.getElementById('checkboxPersonasGrupo');
+            if (!window.legajoPersonasCache || window.legajoPersonasCache.length === 0) {
+                cont.innerHTML = '<p style="color:#666;">No hay personas registradas en legajos.</p>';
+            } else {
+                cont.innerHTML = window.legajoPersonasCache.map((p, idx) => `
+                    <div style="margin-bottom:6px;">
+                        <input type="checkbox" id="p_grupo_${idx}" value="${p}">
+                        <label for="p_grupo_${idx}" style="cursor:pointer; margin-left:4px;">${p}</label>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('modalGrupo').style.display = 'block';
         }
 
-        // Iniciar la app: aplicar estado de sesion y cargar la cartelera
-        aplicarEstadoAuth();
-        cargarEventos();
+        document.getElementById('formGrupo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreGrupo').value;
+            const checkboxes = document.querySelectorAll('#checkboxPersonasGrupo input[type="checkbox"]:checked');
+            const personas = Array.from(checkboxes).map(cb => cb.value);
+
+            try {
+                const res = await fetch('/api/grupos', {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ nombre, personas })
+                });
+                manejarRespuestaAuth(res);
+                if (res.ok) {
+                    cerrarModal('modalGrupo');
+                    cargarGrupos();
+                }
+            } catch (error) { console.error(error); alert('Error al crear el grupo'); }
+        });
+
+        async function eliminarGrupo(id) {
+            if (!confirm('¿Eliminar este grupo?')) return;
+            try {
+                const res = await fetch(`/api/grupos/${id}`, { method: 'DELETE', headers: authHeaders() });
+                manejarRespuestaAuth(res);
+                if (res.ok) cargarGrupos();
+            } catch (error) { console.error(error); }
+        }
+
+        // === INICIALIZACIÓN AL CARGAR EL DOM ===
+        document.addEventListener('DOMContentLoaded', () => {
+            aplicarEstadoAuth();
+            cambiarVista('cartelera');
+        });
     </script>
 </body>
 </html>
