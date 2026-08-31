@@ -469,6 +469,299 @@
         .form-group input[type="text"], .form-group input[type="datetime-local"], .form-group input[type="date"], .form-group select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid var(--negro); border-radius: 0; font-family: inherit; font-size: 14px; }
         .btn-submit { width: 100%; padding: 12px; background: var(--azul); color: var(--blanco); border: 1px solid var(--negro); font-size: 16px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-submit:hover { background: var(--amarillo); color: var(--negro); }
+
+        /* ==========================================================
+           REFRESH VISUAL — tono corporativo mas suave y legible.
+           Se mantiene la identidad (azul + amarillo) pero se bajan
+           los contrastes duros: sin bordes negros, sin MAYUSCULAS,
+           esquinas redondeadas y sombras sutiles.
+           ========================================================== */
+        :root {
+            --azul: #2f5da8;
+            --azul-oscuro: #1e3f75;
+            --azul-suave: #eef3fb;
+            --amarillo: #f0b429;
+            --gris-claro: #f5f7fa;
+            --texto: #2c3542;
+            --texto-suave: #6b7688;
+            --borde: #e3e8ef;
+            --radio: 10px;
+            --sombra: 0 1px 2px rgba(16,24,40,.05), 0 4px 12px rgba(16,24,40,.05);
+        }
+
+        body {
+            background: var(--gris-claro);
+            color: var(--texto);
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            background: var(--azul-oscuro);
+            padding: 14px 22px;
+            box-shadow: 0 1px 3px rgba(16,24,40,.12);
+        }
+        header h1 { font-size: 19px; font-weight: 600; letter-spacing: .1px; }
+
+        .sidebar { background-color: #16233c; }
+        .sidebar a {
+            font-size: 15px;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 0;
+            transition: background-color .15s, color .15s;
+        }
+        .sidebar a:hover { background: rgba(255,255,255,.07); color: var(--amarillo); }
+
+        .main-container { padding: 22px; }
+
+        .panel-box {
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            box-shadow: var(--sombra);
+            overflow: hidden;
+        }
+        .panel-header {
+            background: #fff;
+            border-bottom: 1px solid var(--borde);
+            padding: 16px 20px;
+            align-items: center;
+        }
+        .panel-header h2 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--texto);
+            text-transform: none;
+            letter-spacing: 0;
+            border: none;
+        }
+        .seccion-contenido, .seccion-secundaria { padding: 18px 20px; }
+        .seccion-contenido h3, .seccion-secundaria h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--texto-suave);
+            text-transform: none;
+            letter-spacing: 0;
+            margin: 0 0 12px 0;
+        }
+
+        /* --- Botones: suaves, en minuscula, sin borde negro --- */
+        .btn-agregar, .btn-submit, .btn-action-edit, .btn-action-delete {
+            border-radius: 8px;
+            border: 1px solid transparent;
+            text-transform: none;
+            font-weight: 500;
+            letter-spacing: 0;
+            cursor: pointer;
+            transition: background-color .15s, border-color .15s, color .15s;
+        }
+        .btn-agregar {
+            background: var(--azul);
+            color: #fff;
+            padding: 9px 16px;
+            font-size: 14px;
+        }
+        .btn-agregar:hover { background: var(--azul-oscuro); color: #fff; }
+        .btn-submit {
+            background: var(--azul);
+            color: #fff;
+            padding: 11px 18px;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+        }
+        .btn-submit:hover { background: var(--azul-oscuro); color: #fff; }
+        .btn-action-edit {
+            background: var(--azul-suave);
+            color: var(--azul-oscuro);
+            border-color: #d3e0f5;
+            padding: 6px 13px;
+            font-size: 13px;
+        }
+        .btn-action-edit:hover { background: #dfe9f9; color: var(--azul-oscuro); }
+        .btn-action-delete {
+            background: #fdf0f0;
+            color: #b3261e;
+            border-color: #f6d8d6;
+            padding: 6px 13px;
+            font-size: 13px;
+        }
+        .btn-action-delete:hover { background: #f9dedc; color: #8c1d18; }
+        button:focus-visible, a:focus-visible, input:focus-visible,
+        select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--azul);
+            outline-offset: 2px;
+        }
+
+        /* --- Formularios --- */
+        .modal-content {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 20px 48px rgba(16,24,40,.18);
+            padding: 24px;
+            max-width: 460px;
+        }
+        .modal { background-color: rgba(21,30,48,.45); }
+        input, select, textarea {
+            border: 1px solid #d6dce6 !important;
+            border-radius: 8px !important;
+            padding: 10px 12px !important;
+            font-size: 14px !important;
+            font-family: inherit;
+            background: #fff;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--azul) !important;
+            box-shadow: 0 0 0 3px rgba(47,93,168,.12);
+            outline: none;
+        }
+        label { font-size: 13px; font-weight: 500; color: var(--texto-suave); }
+
+        /* --- Calendarios --- */
+        .calendario-dia {
+            border: 1px solid var(--borde);
+            border-radius: 8px;
+            background: #fff;
+            transition: border-color .15s, background-color .15s;
+        }
+        .calendario-dia:hover { background: var(--azul-suave); border-color: #c3d5f0; }
+        .calendario-dia.hoy {
+            border: 1px solid var(--azul);
+            background: var(--azul-suave);
+            box-shadow: inset 0 0 0 1px var(--azul);
+        }
+        .calendario-dia .num-dia { color: var(--texto); font-weight: 600; }
+        .calendario-dia.hoy .num-dia { color: var(--azul-oscuro); }
+        .calendario-header-dia {
+            color: var(--texto-suave);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: none;
+        }
+        .calendario-nav h3 { font-size: 16px; font-weight: 600; text-transform: capitalize; }
+        .calendario-nav button {
+            border: 1px solid var(--borde);
+            background: #fff;
+            border-radius: 8px;
+            color: var(--texto);
+            cursor: pointer;
+        }
+        .calendario-nav button:hover { background: var(--azul-suave); border-color: #c3d5f0; }
+
+        /* --- LEGAJO: grilla horizontal, todo visible sin desplegar --- */
+        #lista-legajos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            align-items: start;
+        }
+        .legajo-card {
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-left: 3px solid var(--azul);
+            border-radius: var(--radio);
+            box-shadow: var(--sombra);
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .legajo-header {
+            padding: 14px 16px 10px 16px;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: default;
+            flex-wrap: wrap;
+        }
+        .legajo-header:hover { background: transparent; }
+        .legajo-header h5 {
+            font-size: 15px;
+            font-weight: 600;
+            text-transform: none;
+            white-space: normal;
+            color: var(--texto);
+            line-height: 1.3;
+        }
+        /* Ya no hay acordeon: se elimina la flecha */
+        .legajo-header h5::before { content: none; }
+        /* El detalle siempre visible */
+        .legajo-detalle {
+            display: block;
+            padding: 0 16px 14px 16px;
+            border-top: 1px solid var(--borde);
+            margin-top: 4px;
+            padding-top: 12px;
+        }
+        .legajo-datos {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 7px 16px;
+            margin-bottom: 0;
+        }
+        .legajo-datos p {
+            font-size: 13.5px;
+            color: var(--texto);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: baseline;
+            border-bottom: 1px dotted #eceff4;
+            padding-bottom: 5px;
+        }
+        .legajo-datos p:last-child { border-bottom: none; }
+        .legajo-datos strong {
+            color: var(--texto-suave);
+            font-weight: 500;
+            flex: 0 0 auto;
+        }
+        .legajo-datos .valor-dato { text-align: right; font-weight: 500; }
+        .legajo-header .btn-action-edit,
+        .legajo-header .btn-action-delete { padding: 5px 11px; font-size: 12.5px; }
+
+        /* --- Tarjetas varias --- */
+        .epp-card, .vehiculo-item, .evento-item {
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            box-shadow: none;
+        }
+
+        /* --- Diario --- */
+        .diario-general-panel {
+            background: #fff;
+            border: 1px solid var(--borde);
+            border-radius: var(--radio);
+            padding: 16px;
+        }
+        .diario-general-panel h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--texto);
+            text-transform: none;
+            margin: 0 0 10px 0;
+        }
+        .textarea-grande { border-radius: 8px !important; min-height: 220px; line-height: 1.55; }
+        .aviso-guardado {
+            font-size: 13px;
+            color: #1a7f4b;
+            background: #e9f7ef;
+            border: 1px solid #c7ebd6;
+            border-radius: 8px;
+            padding: 7px 11px;
+            margin-top: 10px;
+            display: none;
+        }
+        .aviso-guardado.error { color: #b3261e; background: #fdf0f0; border-color: #f6d8d6; }
+        .aviso-guardado.visible { display: block; }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; }
+        }
+        @media (max-width: 640px) {
+            .main-container { padding: 14px; }
+            #lista-legajos { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -536,8 +829,9 @@
                 </div>
                 <div class="diario-general-panel">
                     <h4>Notas Generales</h4>
-                    <textarea id="textoDiarioGeneral" class="textarea-grande" placeholder="Escribe aquí notas generales..."></textarea>
-                    <button class="btn-submit" onclick="guardarDiarioGeneral()">Guardar</button>
+                    <textarea id="textoDiarioGeneral" class="textarea-grande" placeholder="Notas generales del equipo..."></textarea>
+                    <button class="btn-submit" onclick="guardarDiarioGeneral()">Guardar notas</button>
+                    <div id="avisoDiarioGeneral" class="aviso-guardado"></div>
                 </div>
             </div>
         </div>
@@ -1184,7 +1478,8 @@
         }
 
         function dato(etiqueta, valor) {
-            return `<p><strong>${etiqueta}:</strong> ${valor && String(valor).trim() ? valor : '-'}</p>`;
+            const v = (valor !== null && valor !== undefined && String(valor).trim()) ? valor : '\u2014';
+            return `<p><strong>${etiqueta}</strong><span class="valor-dato">${v}</span></p>`;
         }
 
         function fechaCorta(fechaISO) {
@@ -1215,7 +1510,7 @@
                     div.className = 'legajo-card';
                     div.id = 'legajo-' + leg._id;
                     div.innerHTML = `
-                        <div class="legajo-header" onclick="toggleLegajo('${leg._id}')">
+                        <div class="legajo-header">
                             <h5>${leg.persona}</h5>
                             <div class="evento-actions" style="margin-top:0;" onclick="event.stopPropagation()">
                                 <button class="btn-action-edit" onclick="prepararEdicionLegajo('${leg._id}')">Editar</button>
@@ -1248,10 +1543,8 @@
             }
         }
 
-        function toggleLegajo(id) {
-            const card = document.getElementById('legajo-' + id);
-            if (card) card.classList.toggle('abierto');
-        }
+        // El legajo ya no se despliega: las tarjetas muestran todos los datos.
+        function toggleLegajo() { /* sin efecto (se mantiene por compatibilidad) */ }
 
         // === LÓGICA DE EPP ===
         let editEppId = null;
@@ -1800,10 +2093,14 @@
                 });
                 manejarRespuestaAuth(res);
                 if (res.ok) {
+                    // Refrescamos ANTES de cerrar para que el dia quede actualizado.
+                    await cargarCalendarioDiario();
                     cerrarModal('modalDiaDiario');
-                    cargarCalendarioDiario();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'No se pudo guardar la nota.');
                 }
-            } catch (error) { console.error(error); alert('Error al guardar la nota'); }
+            } catch (error) { console.error(error); alert('Sin conexion con el servidor.'); }
         }
 
         async function cargarDiarioGeneral() {
@@ -1816,6 +2113,16 @@
             } catch (error) { console.error(error); }
         }
 
+        function mostrarAviso(id, mensaje, esError) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = mensaje;
+            el.classList.toggle('error', !!esError);
+            el.classList.add('visible');
+            clearTimeout(el._t);
+            el._t = setTimeout(() => el.classList.remove('visible'), 3500);
+        }
+
         async function guardarDiarioGeneral() {
             const texto = document.getElementById('textoDiarioGeneral').value;
             try {
@@ -1826,13 +2133,17 @@
                 });
                 manejarRespuestaAuth(res);
                 if (!res.ok) {
-                    alert('Error al guardar las notas generales');
-                } else {
-                    const data = await res.json();
-                    document.getElementById('textoDiarioGeneral').value = data.texto || texto;
-                    alert('Notas generales guardadas correctamente');
+                    const err = await res.json().catch(() => ({}));
+                    mostrarAviso('avisoDiarioGeneral', err.error || 'No se pudieron guardar las notas.', true);
+                    return;
                 }
-            } catch (error) { console.error(error); alert('Error al guardar'); }
+                const data = await res.json();
+                document.getElementById('textoDiarioGeneral').value = data.texto || texto;
+                mostrarAviso('avisoDiarioGeneral', 'Notas guardadas.', false);
+            } catch (error) {
+                console.error(error);
+                mostrarAviso('avisoDiarioGeneral', 'Sin conexion con el servidor.', true);
+            }
         }
 
         // === LÓGICA DE ASISTENCIAS ===
@@ -1992,7 +2303,10 @@
 
         async function agregarGrupoDia() {
             const grupoId = document.getElementById('grupoAsistenciaSelect').value;
-            if (!grupoId) return;
+            if (!grupoId) {
+                alert('Primero crea un grupo con al menos una persona.');
+                return;
+            }
             try {
                 const res = await fetch('/api/asistencias/grupo', {
                     method: 'POST',
@@ -2003,8 +2317,11 @@
                 if (res.ok) {
                     await cargarCalendarioAsistencias();
                     abrirDiaAsistencia(fechaDiaAsistenciaSeleccionada);
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'No se pudo agregar el grupo a este dia.');
                 }
-            } catch (error) { console.error(error); }
+            } catch (error) { console.error(error); alert('Sin conexion con el servidor.'); }
         }
 
         async function cambiarEstadoAsistencia(id, estado) {
@@ -2092,8 +2409,12 @@
             }
         }
 
-        function abrirModalGrupo() {
+        async function abrirModalGrupo() {
             document.getElementById('formGrupo').reset();
+            // Aseguramos tener las personas del legajo aunque no se haya abierto antes.
+            if (!window.legajoPersonasCache || window.legajoPersonasCache.length === 0) {
+                await cargarPersonasLegajo();
+            }
             const cont = document.getElementById('checkboxPersonasGrupo');
             if (!window.legajoPersonasCache || window.legajoPersonasCache.length === 0) {
                 cont.innerHTML = '<p style="color:#666;">No hay personas registradas en legajos.</p>';
@@ -2110,9 +2431,15 @@
 
         document.getElementById('formGrupo').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nombre = document.getElementById('nombreGrupo').value;
+            const nombre = document.getElementById('nombreGrupo').value.trim();
             const checkboxes = document.querySelectorAll('#checkboxPersonasGrupo input[type="checkbox"]:checked');
             const personas = Array.from(checkboxes).map(cb => cb.value);
+
+            if (!nombre) { alert('Escribi un nombre para el grupo.'); return; }
+            if (personas.length === 0) {
+                alert('Selecciona al menos una persona para el grupo.');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/grupos', {
@@ -2123,9 +2450,12 @@
                 manejarRespuestaAuth(res);
                 if (res.ok) {
                     cerrarModal('modalGrupo');
-                    cargarGrupos();
+                    await cargarGrupos();
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert(err.error || 'No se pudo crear el grupo.');
                 }
-            } catch (error) { console.error(error); alert('Error al crear el grupo'); }
+            } catch (error) { console.error(error); alert('Sin conexion con el servidor.'); }
         });
 
         async function eliminarGrupo(id) {

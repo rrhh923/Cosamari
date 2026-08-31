@@ -54,6 +54,7 @@ async function conectarDB(reintento = 0) {
     try {
         await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
         console.log('Conectado exitosamente a MongoDB');
+        await normalizarDatosExistentes();
     } catch (err) {
         const espera = Math.min(30000, 5000 * (reintento + 1)); // backoff hasta 30s
         console.error(`Error de conexion a MongoDB (intento ${reintento + 1}): ${err.message}`);
@@ -64,7 +65,29 @@ async function conectarDB(reintento = 0) {
 }
 conectarDB();
 
-// 3. MODELOS DE DATOS (sin cambios)
+// --- HELPERS DE FECHA ---
+// Todas las fechas "de calendario" (notas del diario, asistencias) se guardan
+// SIEMPRE a medianoche UTC del dia elegido. Sin esto, segun la zona horaria del
+// navegador una nota podia guardarse en el dia anterior o siguiente.
+function soloFecha(valor) {
+    if (!valor) return null;
+    if (typeof valor === 'string') {
+        const m = valor.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    }
+    const d = new Date(valor);
+    if (isNaN(d.getTime())) return null;
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+// Fin del dia (23:59:59.999 UTC), para que los rangos "hasta" incluyan ese dia.
+function finDelDia(valor) {
+    const d = soloFecha(valor);
+    if (!d) return null;
+    return new Date(d.getTime() + 24 * 60 * 60 * 1000 - 1);
+}
+
+// 3. MODELOS DE DATOS
 const eventSchema = new mongoose.Schema({
     title: { type: String, required: [true, 'El titulo del evento es obligatorio'], trim: true },
     date: { type: Date, required: [true, 'La fecha de inicio es obligatoria'] },
@@ -78,6 +101,9 @@ const legajoSchema = new mongoose.Schema({
     dni: { type: String, default: '', trim: true },
     certificado: { type: String, default: '', trim: true },
     carnet: { type: String, default: '', trim: true },
+    // Faltaba en el modelo: el formulario lo enviaba pero Mongoose lo descartaba,
+    // asi que "Permisos de trabajo" nunca se guardaba.
+    permisosTrabajo: { type: String, default: '', trim: true },
     antecedentes: { type: String, default: '', trim: true },
     experiencia: { type: String, enum: ['', 'junior', 'semi junior', 'senior', 'supervisor', 'gerente'], default: '' },
     cargo: { type: String, default: '', trim: true },
@@ -114,6 +140,9 @@ const diarioNotaSchema = new mongoose.Schema({
     fecha: { type: Date, required: [true, 'La fecha es obligatoria'] },
     texto: { type: String, default: '' }
 }, { timestamps: true });
+// Una sola nota por dia. Sin este indice se podian crear duplicados para la misma
+// fecha y la pantalla mostraba el texto viejo (parecia que "no se guardaba").
+diarioNotaSchema.index({ fecha: 1 }, { unique: true });
 const DiarioNota = mongoose.model('DiarioNota', diarioNotaSchema);
 
 const diarioGeneralSchema = new mongoose.Schema({
@@ -132,9 +161,67 @@ const asistenciaRegistroSchema = new mongoose.Schema({
     persona: { type: String, required: [true, 'La persona es obligatoria'], trim: true },
     estado: { type: String, enum: ['presente', 'ausente', 'tarde'], default: 'presente' }
 }, { timestamps: true });
+// Una sola fila por persona y dia (evita duplicados al sumar un grupo dos veces).
+asistenciaRegistroSchema.index({ fecha: 1, persona: 1 }, { unique: true });
 const AsistenciaRegistro = mongoose.model('AsistenciaRegistro', asistenciaRegistroSchema);
 
-// 4. RUTAS DE LA API (sin cambios)
+// 3.b LIMPIEZA DE DATOS EXISTENTES (se ejecuta una vez al conectar)
+// Arregla registros viejos que quedaron guardados con hora (o corridos un dia)
+// y elimina duplicados, para que los indices unicos se puedan crear.
+async function normalizarDatosExistentes() {
+    try {
+        // --- Notas del diario: una sola por dia ---
+        const notas = await DiarioNota.find({}).sort({ updatedAt: -1 });
+        const vistos = new Map();
+        for (const n of notas) {
+            const dia = soloFecha(n.fecha);
+            if (!dia) { await DiarioNota.deleteOne({ _id: n._id }); continue; }
+            const clave = dia.toISOString();
+            if (vistos.has(clave)) {
+                // Nos quedamos con la mas reciente (ya ordenamos por updatedAt desc)
+                await DiarioNota.deleteOne({ _id: n._id });
+            } else {
+                vistos.set(clave, true);
+                if (n.fecha.getTime() !== dia.getTime()) {
+                    await DiarioNota.updateOne({ _id: n._id }, { $set: { fecha: dia } });
+                }
+            }
+        }
+
+        // --- Asistencias: una sola por persona y dia ---
+        const registros = await AsistenciaRegistro.find({}).sort({ updatedAt: -1 });
+        const vistosAsis = new Map();
+        for (const r of registros) {
+            const dia = soloFecha(r.fecha);
+            if (!dia || !r.persona) { await AsistenciaRegistro.deleteOne({ _id: r._id }); continue; }
+            const clave = dia.toISOString() + '|' + r.persona;
+            if (vistosAsis.has(clave)) {
+                await AsistenciaRegistro.deleteOne({ _id: r._id });
+            } else {
+                vistosAsis.set(clave, true);
+                if (r.fecha.getTime() !== dia.getTime()) {
+                    await AsistenciaRegistro.updateOne({ _id: r._id }, { $set: { fecha: dia } });
+                }
+            }
+        }
+
+        // --- Nota general: dejar una sola ---
+        const generales = await DiarioGeneral.find({}).sort({ updatedAt: -1 });
+        for (let i = 1; i < generales.length; i++) {
+            await DiarioGeneral.deleteOne({ _id: generales[i]._id });
+        }
+
+        await Promise.all([
+            DiarioNota.syncIndexes(),
+            AsistenciaRegistro.syncIndexes()
+        ]);
+        console.log('Datos normalizados correctamente.');
+    } catch (err) {
+        console.error('Aviso: no se pudo normalizar los datos existentes:', err.message);
+    }
+}
+
+// 4. RUTAS DE LA API
 app.get('/api/events', async (req, res) => {
     try {
         const events = await Event.find().sort({ date: 1 });
@@ -338,8 +425,8 @@ app.get('/api/vehiculo-registros', requireAuth, async (req, res) => {
         if (req.query.tipo) filtro.tipo = req.query.tipo;
         if (req.query.desde || req.query.hasta) {
             filtro.fecha = {};
-            if (req.query.desde) filtro.fecha.$gte = new Date(req.query.desde);
-            if (req.query.hasta) filtro.fecha.$lte = new Date(req.query.hasta);
+            if (req.query.desde) filtro.fecha.$gte = soloFecha(req.query.desde);
+            if (req.query.hasta) filtro.fecha.$lte = finDelDia(req.query.hasta);
         }
         const registros = await VehiculoRegistro.find(filtro).populate('vehiculo', 'nombre patente').sort({ fecha: 1 });
         res.status(200).json(registros);
@@ -386,8 +473,8 @@ app.get('/api/diario-notas', requireAuth, async (req, res) => {
         const filtro = {};
         if (req.query.desde || req.query.hasta) {
             filtro.fecha = {};
-            if (req.query.desde) filtro.fecha.$gte = new Date(req.query.desde);
-            if (req.query.hasta) filtro.fecha.$lte = new Date(req.query.hasta);
+            if (req.query.desde) filtro.fecha.$gte = soloFecha(req.query.desde);
+            if (req.query.hasta) filtro.fecha.$lte = finDelDia(req.query.hasta);
         }
         const notas = await DiarioNota.find(filtro).sort({ fecha: 1 });
         res.status(200).json(notas);
@@ -399,14 +486,16 @@ app.get('/api/diario-notas', requireAuth, async (req, res) => {
 app.put('/api/diario-notas', requireAuth, async (req, res) => {
     try {
         const { fecha, texto } = req.body;
-        if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria.' });
+        const dia = soloFecha(fecha);
+        if (!dia) return res.status(400).json({ error: 'La fecha es obligatoria y debe ser valida.' });
         const nota = await DiarioNota.findOneAndUpdate(
-            { fecha: new Date(fecha) },
-            { texto: texto || '' },
+            { fecha: dia },
+            { $set: { texto: texto || '' }, $setOnInsert: { fecha: dia } },
             { new: true, upsert: true }
         );
         res.status(200).json(nota);
     } catch (error) {
+        console.error('Error guardando nota del diario:', error);
         res.status(500).json({ error: 'Hubo un problema al guardar la nota.' });
     }
 });
@@ -430,7 +519,7 @@ app.put('/api/diario-general', requireAuth, async (req, res) => {
     }
 });
 
-app.get('/api/asistencia-grupos', requireAuth, async (req, res) => {
+app.get(['/api/grupos', '/api/asistencia-grupos'], requireAuth, async (req, res) => {
     try {
         const grupos = await AsistenciaGrupo.find().sort({ nombre: 1 });
         res.status(200).json(grupos);
@@ -439,7 +528,7 @@ app.get('/api/asistencia-grupos', requireAuth, async (req, res) => {
     }
 });
 
-app.post('/api/asistencia-grupos', requireAuth, async (req, res) => {
+app.post(['/api/grupos', '/api/asistencia-grupos'], requireAuth, async (req, res) => {
     try {
         const { nombre } = req.body;
         if (!nombre) return res.status(400).json({ error: 'El nombre del grupo es obligatorio.' });
@@ -451,7 +540,7 @@ app.post('/api/asistencia-grupos', requireAuth, async (req, res) => {
     }
 });
 
-app.put('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
+app.put(['/api/grupos/:id', '/api/asistencia-grupos/:id'], requireAuth, async (req, res) => {
     try {
         const actualizado = await AsistenciaGrupo.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!actualizado) return res.status(404).json({ error: 'El grupo no existe.' });
@@ -461,7 +550,7 @@ app.put('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
     }
 });
 
-app.delete('/api/asistencia-grupos/:id', requireAuth, async (req, res) => {
+app.delete(['/api/grupos/:id', '/api/asistencia-grupos/:id'], requireAuth, async (req, res) => {
     try {
         const eliminado = await AsistenciaGrupo.findByIdAndDelete(req.params.id);
         if (!eliminado) return res.status(404).json({ error: 'El grupo no existe.' });
@@ -475,14 +564,11 @@ app.get('/api/asistencias', requireAuth, async (req, res) => {
     try {
         const filtro = {};
         if (req.query.fecha) {
-            const d = new Date(req.query.fecha);
-            const inicio = new Date(d); inicio.setUTCHours(0, 0, 0, 0);
-            const fin = new Date(d); fin.setUTCHours(23, 59, 59, 999);
-            filtro.fecha = { $gte: inicio, $lte: fin };
+            filtro.fecha = { $gte: soloFecha(req.query.fecha), $lte: finDelDia(req.query.fecha) };
         } else if (req.query.desde || req.query.hasta) {
             filtro.fecha = {};
-            if (req.query.desde) filtro.fecha.$gte = new Date(req.query.desde);
-            if (req.query.hasta) filtro.fecha.$lte = new Date(req.query.hasta);
+            if (req.query.desde) filtro.fecha.$gte = soloFecha(req.query.desde);
+            if (req.query.hasta) filtro.fecha.$lte = finDelDia(req.query.hasta);
         }
         const registros = await AsistenciaRegistro.find(filtro).sort({ fecha: 1, persona: 1 });
         res.status(200).json(registros);
@@ -494,10 +580,11 @@ app.get('/api/asistencias', requireAuth, async (req, res) => {
 app.post('/api/asistencias', requireAuth, async (req, res) => {
     try {
         const { fecha, persona, estado } = req.body;
-        if (!fecha || !persona) return res.status(400).json({ error: 'La fecha y la persona son obligatorias.' });
+        const dia = soloFecha(fecha);
+        if (!dia || !persona) return res.status(400).json({ error: 'La fecha y la persona son obligatorias.' });
         const registro = await AsistenciaRegistro.findOneAndUpdate(
-            { fecha: new Date(fecha), persona },
-            { estado: estado || 'presente' },
+            { fecha: dia, persona },
+            { $set: { estado: estado || 'presente' }, $setOnInsert: { fecha: dia, persona } },
             { new: true, upsert: true }
         );
         res.status(201).json(registro);
@@ -529,10 +616,13 @@ app.delete('/api/asistencias/:id', requireAuth, async (req, res) => {
 app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
     try {
         const { fecha, grupoId } = req.body;
-        if (!fecha || !grupoId) return res.status(400).json({ error: 'La fecha y el grupo son obligatorios.' });
+        const fechaDate = soloFecha(fecha);
+        if (!fechaDate || !grupoId) return res.status(400).json({ error: 'La fecha y el grupo son obligatorios.' });
         const grupo = await AsistenciaGrupo.findById(grupoId);
         if (!grupo) return res.status(404).json({ error: 'El grupo no existe.' });
-        const fechaDate = new Date(fecha);
+        if (!grupo.personas || grupo.personas.length === 0) {
+            return res.status(400).json({ error: 'El grupo no tiene integrantes. Editalo y agrega personas.' });
+        }
         const operaciones = grupo.personas.map(persona => ({
             updateOne: {
                 filter: { fecha: fechaDate, persona },
@@ -551,8 +641,8 @@ app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
 app.post('/api/asistencias/marcar-todos', requireAuth, async (req, res) => {
     try {
         const { fecha, estado } = req.body;
-        if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria.' });
-        const fechaDate = new Date(fecha);
+        const fechaDate = soloFecha(fecha);
+        if (!fechaDate) return res.status(400).json({ error: 'La fecha es obligatoria.' });
         await AsistenciaRegistro.updateMany({ fecha: fechaDate }, { estado: estado || 'presente' });
         const registrosDelDia = await AsistenciaRegistro.find({ fecha: fechaDate }).sort({ persona: 1 });
         res.status(200).json(registrosDelDia);
