@@ -194,13 +194,17 @@ async function normalizarDatosExistentes() {
         for (const r of registros) {
             const dia = soloFecha(r.fecha);
             if (!dia || !r.persona) { await AsistenciaRegistro.deleteOne({ _id: r._id }); continue; }
-            const clave = dia.toISOString() + '|' + r.persona;
+            const clave = dia.toISOString() + '|' + r.persona.trim().toLowerCase();
             if (vistosAsis.has(clave)) {
                 await AsistenciaRegistro.deleteOne({ _id: r._id });
             } else {
                 vistosAsis.set(clave, true);
-                if (r.fecha.getTime() !== dia.getTime()) {
-                    await AsistenciaRegistro.updateOne({ _id: r._id }, { $set: { fecha: dia } });
+                const nombreLimpio = r.persona.trim();
+                const cambios = {};
+                if (r.fecha.getTime() !== dia.getTime()) cambios.fecha = dia;
+                if (nombreLimpio !== r.persona) cambios.persona = nombreLimpio;
+                if (Object.keys(cambios).length > 0) {
+                    await AsistenciaRegistro.updateOne({ _id: r._id }, { $set: cambios });
                 }
             }
         }
@@ -209,6 +213,23 @@ async function normalizarDatosExistentes() {
         const generales = await DiarioGeneral.find({}).sort({ updatedAt: -1 });
         for (let i = 1; i < generales.length; i++) {
             await DiarioGeneral.deleteOne({ _id: generales[i]._id });
+        }
+
+        // Las notas generales ahora se guardan por fecha. Si quedo texto del
+        // esquema anterior (sin fecha), lo movemos a la nota del dia en que se
+        // escribio, para no perderlo.
+        const general = generales[0];
+        if (general && general.texto && general.texto.trim()) {
+            const diaOrigen = soloFecha(general.updatedAt || general.createdAt || new Date());
+            const notaDelDia = await DiarioNota.findOne({ fecha: diaOrigen });
+            if (!notaDelDia) {
+                await DiarioNota.create({ fecha: diaOrigen, texto: general.texto });
+            } else if (!notaDelDia.texto || !notaDelDia.texto.includes(general.texto.trim())) {
+                notaDelDia.texto = [notaDelDia.texto, general.texto].filter(Boolean).join('\n\n');
+                await notaDelDia.save();
+            }
+            await DiarioGeneral.updateOne({ _id: general._id }, { $set: { texto: '' } });
+            console.log(`Notas generales anteriores movidas al ${diaOrigen.toISOString().slice(0, 10)}.`);
         }
 
         await Promise.all([
@@ -581,10 +602,27 @@ app.post('/api/asistencias', requireAuth, async (req, res) => {
     try {
         const { fecha, persona, estado } = req.body;
         const dia = soloFecha(fecha);
-        if (!dia || !persona) return res.status(400).json({ error: 'La fecha y la persona son obligatorias.' });
+        const nombre = (persona || '').trim();
+        if (!dia || !nombre) return res.status(400).json({ error: 'La fecha y la persona son obligatorias.' });
+
+        // Evitar que la misma persona quede dos veces el mismo dia.
+        // Comparamos sin distinguir mayusculas ni espacios de mas.
+        const escapado = nombre.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const yaExiste = await AsistenciaRegistro.findOne({
+            fecha: dia,
+            persona: { $regex: `^${escapado}$`, $options: 'i' }
+        });
+        if (yaExiste) {
+            if (estado && yaExiste.estado !== estado) {
+                yaExiste.estado = estado;
+                await yaExiste.save();
+            }
+            return res.status(200).json(yaExiste);
+        }
+
         const registro = await AsistenciaRegistro.findOneAndUpdate(
-            { fecha: dia, persona },
-            { $set: { estado: estado || 'presente' }, $setOnInsert: { fecha: dia, persona } },
+            { fecha: dia, persona: nombre },
+            { $set: { estado: estado || 'presente' }, $setOnInsert: { fecha: dia, persona: nombre } },
             { new: true, upsert: true }
         );
         res.status(201).json(registro);
@@ -623,17 +661,34 @@ app.post('/api/asistencias/grupo', requireAuth, async (req, res) => {
         if (!grupo.personas || grupo.personas.length === 0) {
             return res.status(400).json({ error: 'El grupo no tiene integrantes. Editalo y agrega personas.' });
         }
-        const operaciones = grupo.personas.map(persona => ({
-            updateOne: {
-                filter: { fecha: fechaDate, persona },
-                update: { $setOnInsert: { fecha: fechaDate, persona, estado: 'presente' } },
-                upsert: true
-            }
-        }));
-        if (operaciones.length > 0) await AsistenciaRegistro.bulkWrite(operaciones);
+        // Solo agregamos a quienes todavia no estan cargados ese dia,
+        // comparando sin distinguir mayusculas ni espacios de mas.
+        const yaCargados = await AsistenciaRegistro.find({ fecha: fechaDate });
+        const clavesExistentes = new Set(yaCargados.map(r => (r.persona || '').trim().toLowerCase()));
+
+        const nuevos = [];
+        const vistos = new Set();
+        for (const p of grupo.personas) {
+            const nombre = (p || '').trim();
+            if (!nombre) continue;
+            const clave = nombre.toLowerCase();
+            if (clavesExistentes.has(clave) || vistos.has(clave)) continue;
+            vistos.add(clave);
+            nuevos.push({
+                insertOne: { document: { fecha: fechaDate, persona: nombre, estado: 'presente' } }
+            });
+        }
+
+        if (nuevos.length > 0) {
+            // ordered:false -> si alguno choca con el indice unico, el resto igual entra
+            await AsistenciaRegistro.bulkWrite(nuevos, { ordered: false }).catch(err => {
+                if (err.code !== 11000) throw err;
+            });
+        }
         const registrosDelDia = await AsistenciaRegistro.find({ fecha: fechaDate }).sort({ persona: 1 });
         res.status(200).json(registrosDelDia);
     } catch (error) {
+        console.error('Error agregando grupo al dia:', error);
         res.status(500).json({ error: 'Hubo un problema al agregar el grupo.' });
     }
 });

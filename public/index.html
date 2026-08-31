@@ -54,6 +54,10 @@
         .lock-btn:hover { color: var(--blanco); }
 
         /* Oculto por defecto: solo aparece si el body tiene la clase 'autenticado' */
+        /* Se usa :not(.autenticado) + !important para que ninguna regla posterior
+           (por ejemplo .evento-actions{display:flex}) vuelva a mostrar los botones
+           cuando NO se ingreso la contraseña. */
+        body:not(.autenticado) .solo-autenticado { display: none !important; }
         .solo-autenticado { display: none; }
         body.autenticado .solo-autenticado { display: initial; }
         body.autenticado a.solo-autenticado { display: block; }
@@ -632,8 +636,8 @@
             background: var(--azul-suave);
             box-shadow: inset 0 0 0 1px var(--azul);
         }
-        .calendario-dia .num-dia { color: var(--texto); font-weight: 600; }
-        .calendario-dia.hoy .num-dia { color: var(--azul-oscuro); }
+        .calendario-dia .num-dia { color: #9aa4b2; font-weight: 500; }
+        .calendario-dia.hoy .num-dia { color: var(--azul); font-weight: 600; }
         .calendario-header-dia {
             color: var(--texto-suave);
             font-weight: 600;
@@ -684,16 +688,30 @@
             color: var(--texto);
             line-height: 1.3;
         }
-        /* Ya no hay acordeon: se elimina la flecha */
-        .legajo-header h5::before { content: none; }
-        /* El detalle siempre visible */
+        /* Acordeon: la tarjeta arranca cerrada y se abre al hacer clic. */
+        .legajo-header { cursor: pointer; }
+        .legajo-header:hover { background: var(--azul-suave); }
+        .legajo-header h5::before {
+            content: '\25B8';
+            display: inline-block;
+            font-size: 11px;
+            color: var(--azul);
+            margin-right: 8px;
+            transition: transform .18s ease;
+        }
+        .legajo-card.abierto .legajo-header h5::before { transform: rotate(90deg); }
         .legajo-detalle {
-            display: block;
+            display: none;
             padding: 0 16px 14px 16px;
             border-top: 1px solid var(--borde);
+        }
+        .legajo-card.abierto .legajo-detalle {
+            display: block;
             margin-top: 4px;
             padding-top: 12px;
         }
+        /* Cerradas ocupan poco: las tarjetas pueden ser mas angostas. */
+        #lista-legajos { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
         .legajo-datos {
             display: grid;
             grid-template-columns: 1fr;
@@ -742,6 +760,12 @@
             margin: 0 0 10px 0;
         }
         .textarea-grande { border-radius: 8px !important; min-height: 220px; line-height: 1.55; }
+        .subtitulo-panel {
+            margin: -4px 0 10px 0;
+            font-size: 13px;
+            color: var(--texto-suave);
+            text-transform: capitalize;
+        }
         .aviso-guardado {
             font-size: 13px;
             color: #1a7f4b;
@@ -828,9 +852,10 @@
                     <div class="calendario-grid" id="calendarioGridDiario"></div>
                 </div>
                 <div class="diario-general-panel">
-                    <h4>Notas Generales</h4>
-                    <textarea id="textoDiarioGeneral" class="textarea-grande" placeholder="Notas generales del equipo..."></textarea>
-                    <button class="btn-submit" onclick="guardarDiarioGeneral()">Guardar notas</button>
+                    <h4>Notas generales de hoy</h4>
+                    <p id="fechaDiarioGeneral" class="subtitulo-panel"></p>
+                    <textarea id="textoDiarioGeneral" class="textarea-grande" placeholder="Escribi aca las novedades del dia..."></textarea>
+                    <button class="btn-submit" onclick="guardarDiarioGeneral()">Guardar notas de hoy</button>
                     <div id="avisoDiarioGeneral" class="aviso-guardado"></div>
                 </div>
             </div>
@@ -1289,6 +1314,7 @@
         }
 
         function abrirModalEvento() {
+            if (!requiereClave()) return;
             editEventId = null;
             document.getElementById('modalTitleEvento').innerText = 'Agregar Evento';
             document.getElementById('btnSubmitEvento').innerText = 'Guardar Evento';
@@ -1297,7 +1323,17 @@
             document.getElementById('modalEvento').style.display = "block";
         }
 
+        // Guarda de seguridad: sin contraseña no se edita nada.
+        function requiereClave() {
+            if (!window.authToken) {
+                abrirModalLogin();
+                return false;
+            }
+            return true;
+        }
+
         function prepararEdicionEvento(id) {
+            if (!requiereClave()) return;
             const ev = window.currentEvents.find(e => e._id === id);
             if (!ev) return;
             
@@ -1343,6 +1379,7 @@
         });
 
         async function eliminarEvento(id) {
+            if (!requiereClave()) return;
             if (!confirm("¿Eliminar este evento?")) return;
             try {
                 const res = await fetch(`/api/events/${id}`, { method: 'DELETE', headers: authHeaders() });
@@ -1510,7 +1547,8 @@
                     div.className = 'legajo-card';
                     div.id = 'legajo-' + leg._id;
                     div.innerHTML = `
-                        <div class="legajo-header">
+                        <div class="legajo-header" onclick="toggleLegajo('${leg._id}')" role="button" tabindex="0"
+                             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLegajo('${leg._id}');}">
                             <h5>${leg.persona}</h5>
                             <div class="evento-actions" style="margin-top:0;" onclick="event.stopPropagation()">
                                 <button class="btn-action-edit" onclick="prepararEdicionLegajo('${leg._id}')">Editar</button>
@@ -1543,8 +1581,10 @@
             }
         }
 
-        // El legajo ya no se despliega: las tarjetas muestran todos los datos.
-        function toggleLegajo() { /* sin efecto (se mantiene por compatibilidad) */ }
+        function toggleLegajo(id) {
+            const card = document.getElementById('legajo-' + id);
+            if (card) card.classList.toggle('abierto');
+        }
 
         // === LÓGICA DE EPP ===
         let editEppId = null;
@@ -2095,6 +2135,8 @@
                 if (res.ok) {
                     // Refrescamos ANTES de cerrar para que el dia quede actualizado.
                     await cargarCalendarioDiario();
+                    // Si se edito el dia de hoy, actualizamos tambien el panel lateral.
+                    if (fechaDiaDiarioSeleccionada === fechaDeHoyYMD()) await cargarDiarioGeneral();
                     cerrarModal('modalDiaDiario');
                 } else {
                     const err = await res.json().catch(() => ({}));
@@ -2103,13 +2145,27 @@
             } catch (error) { console.error(error); alert('Sin conexion con el servidor.'); }
         }
 
+        // Las notas generales se guardan SIEMPRE en la fecha de hoy,
+        // asi quedan asociadas al dia y se ven en el calendario.
+        function fechaDeHoyYMD() { return formatoYMD(new Date()); }
+
         async function cargarDiarioGeneral() {
+            const hoy = fechaDeHoyYMD();
+            const etiqueta = document.getElementById('fechaDiarioGeneral');
+            if (etiqueta) {
+                etiqueta.textContent = new Date().toLocaleDateString('es-AR', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+            }
             try {
-                const res = await fetch('/api/diario-general', { headers: authHeaders() });
+                const res = await fetch(`/api/diario-notas?desde=${hoy}&hasta=${hoy}`, { headers: authHeaders() });
                 manejarRespuestaAuth(res);
                 if (!res.ok) return;
-                const data = await res.json();
-                document.getElementById('textoDiarioGeneral').value = data.texto || '';
+                const notas = await res.json();
+                const notaHoy = Array.isArray(notas)
+                    ? notas.find(n => formatoYMDUTC(new Date(n.fecha)) === hoy)
+                    : null;
+                document.getElementById('textoDiarioGeneral').value = notaHoy ? (notaHoy.texto || '') : '';
             } catch (error) { console.error(error); }
         }
 
@@ -2125,11 +2181,12 @@
 
         async function guardarDiarioGeneral() {
             const texto = document.getElementById('textoDiarioGeneral').value;
+            const hoy = fechaDeHoyYMD();
             try {
-                const res = await fetch('/api/diario-general', {
+                const res = await fetch('/api/diario-notas', {
                     method: 'PUT',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ texto })
+                    body: JSON.stringify({ fecha: hoy, texto })
                 });
                 manejarRespuestaAuth(res);
                 if (!res.ok) {
@@ -2138,8 +2195,10 @@
                     return;
                 }
                 const data = await res.json();
-                document.getElementById('textoDiarioGeneral').value = data.texto || texto;
-                mostrarAviso('avisoDiarioGeneral', 'Notas guardadas.', false);
+                document.getElementById('textoDiarioGeneral').value = data.texto !== undefined ? data.texto : texto;
+                mostrarAviso('avisoDiarioGeneral', 'Notas guardadas en el dia de hoy.', false);
+                // Refrescamos el calendario para que la nota aparezca en el cuadro de hoy.
+                await cargarCalendarioDiario();
             } catch (error) {
                 console.error(error);
                 mostrarAviso('avisoDiarioGeneral', 'Sin conexion con el servidor.', true);
@@ -2217,7 +2276,13 @@
             const hoyStr = formatoYMD(new Date());
             for (let dia = 1; dia <= ultimoDiaMes.getDate(); dia++) {
                 const clave = formatoYMD(new Date(anio, mes, dia));
-                const registros = window.asistenciasPorDia[clave] || [];
+                const vistosDia = new Set();
+                const registros = (window.asistenciasPorDia[clave] || []).filter(r => {
+                    const k = (r.persona || '').trim().toLowerCase();
+                    if (!k || vistosDia.has(k)) return false;
+                    vistosDia.add(k);
+                    return true;
+                });
                 const presentes = registros.filter(r => r.estado === 'presente').length;
                 const ausentes = registros.filter(r => r.estado === 'ausente').length;
                 const tarde = registros.filter(r => r.estado === 'tarde').length;
@@ -2241,8 +2306,11 @@
             const [y, m, d] = fechaYMD.split('-');
             document.getElementById('tituloDiaAsistencia').innerText = `Asistencia del ${d}/${m}/${y}`;
 
-            const yaAgregadas = (window.asistenciasPorDia[fechaYMD] || []).map(r => r.persona);
-            const disponibles = window.legajoPersonasCache.filter(p => !yaAgregadas.includes(p));
+            const yaAgregadas = new Set(
+                (window.asistenciasPorDia[fechaYMD] || []).map(r => (r.persona || '').trim().toLowerCase())
+            );
+            const disponibles = window.legajoPersonasCache
+                .filter(p => p && !yaAgregadas.has(String(p).trim().toLowerCase()));
             const selectPersona = document.getElementById('personaAsistenciaSelect');
             selectPersona.innerHTML = disponibles.length
                 ? disponibles.map(p => `<option value="${p}">${p}</option>`).join('')
@@ -2259,8 +2327,17 @@
 
         function renderListaAsistenciaDia() {
             const cont = document.getElementById('listaAsistenciaDia');
+            // Blindaje extra: si por datos viejos llegara la misma persona repetida,
+            // mostramos una sola fila por persona.
+            const vistos = new Set();
             const registros = (window.asistenciasPorDia[fechaDiaAsistenciaSeleccionada] || [])
-                .slice().sort((a, b) => a.persona.localeCompare(b.persona));
+                .filter(r => {
+                    const clave = (r.persona || '').trim().toLowerCase();
+                    if (!clave || vistos.has(clave)) return false;
+                    vistos.add(clave);
+                    return true;
+                })
+                .sort((a, b) => a.persona.localeCompare(b.persona));
             cont.innerHTML = '';
 
             if (registros.length === 0) {
@@ -2287,6 +2364,12 @@
         async function agregarPersonaDia() {
             const persona = document.getElementById('personaAsistenciaSelect').value;
             if (!persona) return;
+            const yaEsta = (window.asistenciasPorDia[fechaDiaAsistenciaSeleccionada] || [])
+                .some(r => (r.persona || '').trim().toLowerCase() === persona.trim().toLowerCase());
+            if (yaEsta) {
+                alert(`${persona} ya esta cargado en este dia.`);
+                return;
+            }
             try {
                 const res = await fetch('/api/asistencias', {
                     method: 'POST',
