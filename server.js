@@ -10,7 +10,10 @@ const PORT = process.env.PORT || 3000;
 // 1. MIDDLEWARES
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));  // <--- Cambio: sirve desde la raíz
+// Servir SOLO la carpeta public (donde está index.html).
+// Importante: NO servir __dirname (raíz), porque expondría .env, server.js, etc.
+const PUBLIC_DIR = path.join(__dirname, 'public');
+app.use(express.static(PUBLIC_DIR));
 
 // --- AUTENTICACION SIMPLE POR CONTRASEÑA ---
 if (!process.env.ADMIN_PASSWORD) {
@@ -36,18 +39,30 @@ function requireAuth(req, res, next) {
 }
 
 // 2. CONEXION A LA BASE DE DATOS
-if (!process.env.MONGO_URI) {
-    console.error('ERROR FATAL: La variable de entorno MONGO_URI no esta configurada.');
-    process.exit(1);
-}
-
+// En Render conviene NO cerrar el proceso ante un fallo de conexion:
+// si el proceso muere, Render lo reinicia en bucle. En su lugar reintentamos
+// y dejamos el servidor HTTP levantado (para que Render detecte el puerto abierto
+// y para poder ver los logs).
 mongoose.set('strictQuery', false);
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Conectado exitosamente a MongoDB'))
-    .catch(err => {
-        console.error('Error critico de conexion a MongoDB:', err);
-        process.exit(1);
-    });
+
+async function conectarDB(reintento = 0) {
+    if (!process.env.MONGO_URI) {
+        console.error('ERROR: La variable de entorno MONGO_URI no esta configurada. ' +
+            'Configurala en Render > Environment. El servidor sigue vivo pero la base de datos no funcionara.');
+        return;
+    }
+    try {
+        await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
+        console.log('Conectado exitosamente a MongoDB');
+    } catch (err) {
+        const espera = Math.min(30000, 5000 * (reintento + 1)); // backoff hasta 30s
+        console.error(`Error de conexion a MongoDB (intento ${reintento + 1}): ${err.message}`);
+        console.error(`Reintentando en ${espera / 1000}s... ` +
+            '(Si usas MongoDB Atlas, verifica que en Network Access este permitido 0.0.0.0/0.)');
+        setTimeout(() => conectarDB(reintento + 1), espera);
+    }
+}
+conectarDB();
 
 // 3. MODELOS DE DATOS (sin cambios)
 const eventSchema = new mongoose.Schema({
@@ -546,16 +561,23 @@ app.post('/api/asistencias/marcar-todos', requireAuth, async (req, res) => {
     }
 });
 
+// Health check para Render (responde aunque la base de datos no este lista)
+app.get('/healthz', (req, res) => {
+    const estados = ['desconectado', 'conectado', 'conectando', 'desconectando'];
+    res.status(200).json({ ok: true, db: estados[mongoose.connection.readyState] || 'desconocido' });
+});
+
 app.use('/api/*', (req, res) => {
     res.status(404).json({ error: 'El endpoint de la API no existe.' });
 });
 
-// Ruta por defecto: envía index.html desde el mismo directorio
+// Ruta por defecto: envía index.html desde la carpeta public
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));  // <--- Cambio
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 // 5. INICIAR SERVIDOR
-app.listen(PORT, () => {
+// Escuchamos en 0.0.0.0 (requerido por Render) y en process.env.PORT.
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor ejecutandose correctamente en el puerto ${PORT}`);
 });

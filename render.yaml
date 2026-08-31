@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: cosa-mari
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: MONGO_URI
+        sync: false          # Se define en el panel de Render (no se sube al repo)
+      - key: ADMIN_PASSWORD
+        sync: false          # Se define en el panel de Render
+      # PORT lo inyecta Render automaticamente; no hace falta configurarlo.
